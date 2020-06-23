@@ -22,8 +22,6 @@ public class ToneGenerator extends AsyncTask<Integer, Integer, Void> {
                                                      AudioFormat.CHANNEL_OUT_MONO,
                                                      AudioFormat.ENCODING_PCM_16BIT);
 
-        Log.d("TAG","buffer size: "+bufferSize);
-
         audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
                                     Configuration.SAMPLING_RATE,
                                     AudioFormat.CHANNEL_OUT_MONO,
@@ -37,7 +35,6 @@ public class ToneGenerator extends AsyncTask<Integer, Integer, Void> {
             playTone(startIndex*Configuration.SAMPLES_PER_DATA_BIT);
         }
 
-        Log.d("TAG","Sound play success");
         audioTrack.release();
         return null;
     }
@@ -61,7 +58,7 @@ public class ToneGenerator extends AsyncTask<Integer, Integer, Void> {
             // f -> Carrier frequency
             // fs -> Sampling frequency
 
-            final short sampleValue = (short) ((encodedBits.get(startIndex+i) * samples[i]));
+            final short sampleValue = (short) ((encodedBits.get(startIndex+i) * 32767 * samples[i]));
             final int index = 2*i;
             modulatedWaveData[index] = (byte) (sampleValue & 0x00ff);
             modulatedWaveData[index + 1] = (byte) ((sampleValue & 0xff00) >>> 8);
