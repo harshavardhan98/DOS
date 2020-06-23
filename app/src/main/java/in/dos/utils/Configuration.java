@@ -9,5 +9,7 @@ public class Configuration {
     public final static Integer SPREADING_FACTOR = 4;
     public final static Double CODE_BIT_DURATION = BIT_DURATION / SPREADING_FACTOR;
     public final static Integer CARRIER_FREQUENCY = 18000;
+    public final static Integer SAMPLES_PER_DATA_BIT = (int)( BIT_DURATION * SAMPLING_RATE );
+    public final static Integer SAMPLES_PER_CODE_BIT = (int)( CODE_BIT_DURATION * SAMPLING_RATE );
 
 }

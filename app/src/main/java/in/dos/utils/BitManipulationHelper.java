@@ -20,9 +20,12 @@ public class BitManipulationHelper {
     }
 
 
-    String xor(String c1,String c2){
+    String xor(String c1, String c2){
         return (c1.equals(c2))?"0":"1";
     }
+
+
+    Byte xor(Byte a, Byte b){ return a.equals(b) ? (byte)0 : (byte)1; }
 
 
     public ArrayList<String> generatePseudoRandomSequence(final String seed){
@@ -80,33 +83,45 @@ public class BitManipulationHelper {
 
     public ArrayList<Byte> interpolateDataBits(ArrayList<String> bitString){
 
-        ArrayList<Byte> interPolatedData = new ArrayList<>();
-        // todo : Check whether we can apply ceil to interPolationRate
-        int interPolationRate = (int)(Configuration.SAMPLING_RATE *Configuration.BIT_DURATION);
+        ArrayList<Byte> interpolatedData = new ArrayList<>();
+        // todo : Check whether we can apply ceil to interpolationRate
 
         for(int i=0;i<bitString.size();i++){
-            Byte interPolatedByte = Byte.parseByte(bitString.get(i));
-            for(int j=0;j<interPolationRate;j++){
-                interPolatedData.add(interPolatedByte);
+            Byte interpolatedByte = Byte.parseByte(bitString.get(i));
+            for(int j = 0; j<Configuration.SAMPLES_PER_DATA_BIT; j++){
+                interpolatedData.add(interpolatedByte);
             }
         }
 
-        return interPolatedData;
+        return interpolatedData;
     }
-
 
     public ArrayList<Byte> interpolateCodeBits(ArrayList<String> pseudoRandomSequence){
 
-        ArrayList<Byte> interPolatedCode = new ArrayList<>();
-        int interPolationRate = (int)(Configuration.SAMPLING_RATE *Configuration.CODE_BIT_DURATION);
+        ArrayList<Byte> interpolatedCode = new ArrayList<>();
 
         for(int i=0;i<pseudoRandomSequence.size();i++){
-            Byte interPolatedByte = Byte.parseByte(pseudoRandomSequence.get(i));
-            for(int j=0;j<interPolationRate;j++){
-                interPolatedCode.add(interPolatedByte);
+            Byte interpolatedByte = Byte.parseByte(pseudoRandomSequence.get(i));
+            for(int j=0;j<Configuration.CODE_BIT_DURATION;j++){
+                interpolatedCode.add(interpolatedByte);
             }
         }
 
-        return interPolatedCode;
+        return interpolatedCode;
     }
+
+    public ArrayList<Byte> encodeBits(ArrayList<Byte> interpolatedCodeBits, ArrayList<Byte> interpolatedDataBits){
+
+        final int dataBitsLength = interpolatedDataBits.size();
+        final int codeBitsLength = interpolatedCodeBits.size();
+
+        ArrayList<Byte> encodedBits = new ArrayList<>();
+
+        for(int i=0;i<dataBitsLength;i++){
+            encodedBits.add(xor(interpolatedDataBits.get(i), interpolatedCodeBits.get(i%codeBitsLength)));
+        }
+
+        return encodedBits;
+    }
+
 }
