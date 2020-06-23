@@ -82,7 +82,7 @@ public class BitManipulationHelper {
 
         ArrayList<Byte> interPolatedData = new ArrayList<>();
         // todo : Check whether we can apply ceil to interPolationRate
-        int interPolationRate = (int)(Configuration.SAMPLING_FREQUENCY*Configuration.BIT_DURATION);
+        int interPolationRate = (int)(Configuration.SAMPLING_RATE *Configuration.BIT_DURATION);
 
         for(int i=0;i<bitString.size();i++){
             Byte interPolatedByte = Byte.parseByte(bitString.get(i));
@@ -98,7 +98,7 @@ public class BitManipulationHelper {
     public ArrayList<Byte> interpolateCodeBits(ArrayList<String> pseudoRandomSequence){
 
         ArrayList<Byte> interPolatedCode = new ArrayList<>();
-        int interPolationRate = (int)(Configuration.SAMPLING_FREQUENCY*Configuration.CODE_BIT_DURATION);
+        int interPolationRate = (int)(Configuration.SAMPLING_RATE *Configuration.CODE_BIT_DURATION);
 
         for(int i=0;i<pseudoRandomSequence.size();i++){
             Byte interPolatedByte = Byte.parseByte(pseudoRandomSequence.get(i));
