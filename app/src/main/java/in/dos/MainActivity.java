@@ -2,11 +2,10 @@ package in.dos;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.Build;
 import android.os.Bundle;
+import com.speak.sender.Sender;
 
-import in.dos.sender.Sender;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -15,6 +14,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         new Sender().sendData("Harsha");
     }
 

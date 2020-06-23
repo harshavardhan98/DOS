@@ -1,12 +1,9 @@
-package in.dos.sender;
+package com.speak.sender;
 
 import android.util.Log;
-
+import com.speak.utils.BitManipulationHelper;
+import com.speak.utils.Configuration;
 import java.util.ArrayList;
-import java.util.List;
-
-import in.dos.utils.BitManipulationHelper;
-import in.dos.utils.Configuration;
 
 public class Sender {
 
@@ -20,8 +17,8 @@ public class Sender {
         ArrayList<Byte> interpolatedCodeBits = bitManipulationHelper.interpolateCodeBits(pseudoRandomSequence);
         ArrayList<Byte> encodedBits = bitManipulationHelper.encodeBits(interpolatedCodeBits, interpolatedDataBits);
 
-        ToneGenerator toneGenerator = new ToneGenerator(encodedBits);
-        toneGenerator.execute();
+        ToneGeneratorThread toneGeneratorThread = new ToneGeneratorThread(encodedBits);
+        toneGeneratorThread.execute();
         Log.d("Sender", "Tone Generation Started.");
 
     }

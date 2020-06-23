@@ -1,2 +1,3 @@
+include ':speak'
 include ':app'
 rootProject.name = "DOS"

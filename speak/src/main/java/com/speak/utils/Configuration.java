@@ -1,4 +1,4 @@
-package in.dos.utils;
+package com.speak.utils;
 
 public class Configuration {
 

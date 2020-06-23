@@ -1,16 +1,15 @@
-package in.dos.sender;
+package com.speak.sender;
 
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.AsyncTask;
-import android.util.Log;
+import com.speak.utils.Configuration;
 
 import java.util.ArrayList;
 
-import in.dos.utils.Configuration;
 
-public class ToneGenerator extends AsyncTask<Integer, Integer, Void> {
+public class ToneGeneratorThread extends AsyncTask<Integer, Integer, Void> {
 
     AudioTrack audioTrack;
     ArrayList<Byte> encodedBits;
@@ -77,7 +76,7 @@ public class ToneGenerator extends AsyncTask<Integer, Integer, Void> {
         this.encodedBits = encodedBits;
     }
 
-    ToneGenerator(ArrayList<Byte> encodedBits){
+    ToneGeneratorThread(ArrayList<Byte> encodedBits){
         this.encodedBits = encodedBits;
     }
 

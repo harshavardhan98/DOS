@@ -1,7 +1,5 @@
-package in.dos.utils;
+package com.speak.utils;
 
-import android.util.Log;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
