@@ -2,14 +2,68 @@ package com.speak.utils;
 
 public class Configuration {
 
-    public final static String SEED_VALUE = "1111";
-    public final static Integer SAMPLING_RATE = 44100;
+    private String seedValue;
+    private Integer samplingRate;
     // TODO check with codec for android devices
-    public final static Double BIT_DURATION = 0.2;
-    public final static Integer SPREADING_FACTOR = 4;
-    public final static Double CODE_BIT_DURATION = BIT_DURATION / SPREADING_FACTOR;
-    public final static Integer CARRIER_FREQUENCY = 10000;
-    public final static Integer SAMPLES_PER_DATA_BIT = (int)( BIT_DURATION * SAMPLING_RATE );
-    public final static Integer SAMPLES_PER_CODE_BIT = (int)( CODE_BIT_DURATION * SAMPLING_RATE );
+    private Double bitDuration;
+    private Integer spreadingFactor;
+    private Double codeBitDuration;
+    private Integer carrierFrequency;
+    private Integer samplesPerDataBit;
+    private Integer samplesPerCodeBit;
 
+    public Configuration() {
+        this.seedValue = "1111";
+        this.samplingRate = 44100;
+        this.bitDuration = 0.2;
+        this.spreadingFactor = 4;
+        this.carrierFrequency = 10000;
+        setDependentData();
+    }
+
+    public void setSeedValue(String seedValue) {
+        this.seedValue = seedValue;
+    }
+
+    public void setCarrierFrequency(Integer carrierFrequency) {
+        this.carrierFrequency = carrierFrequency;
+    }
+
+    void setDependentData() {
+        this.codeBitDuration = this.bitDuration / this.spreadingFactor;
+        this.samplesPerDataBit = (int) (bitDuration * samplingRate);
+        this.samplesPerCodeBit = (int) (codeBitDuration * samplingRate);
+    }
+
+    public String getSeedValue() {
+        return seedValue;
+    }
+
+    public Integer getSamplingRate() {
+        return samplingRate;
+    }
+
+    public Double getBitDuration() {
+        return bitDuration;
+    }
+
+    public Integer getSpreadingFactor() {
+        return spreadingFactor;
+    }
+
+    public Double getCodeBitDuration() {
+        return codeBitDuration;
+    }
+
+    public Integer getCarrierFrequency() {
+        return carrierFrequency;
+    }
+
+    public Integer getSamplesPerDataBit() {
+        return samplesPerDataBit;
+    }
+
+    public Integer getSamplesPerCodeBit() {
+        return samplesPerCodeBit;
+    }
 }
