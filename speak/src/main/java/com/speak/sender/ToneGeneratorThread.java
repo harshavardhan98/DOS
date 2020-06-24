@@ -26,7 +26,6 @@ public class ToneGeneratorThread extends Thread {
         int bufferSize = AudioTrack.getMinBufferSize(configuration.getSamplingRate(),
                 AudioFormat.CHANNEL_OUT_MONO,
                 AudioFormat.ENCODING_PCM_16BIT);
-
         audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
                 configuration.getSamplingRate(),
                 AudioFormat.CHANNEL_OUT_MONO,
@@ -36,8 +35,9 @@ public class ToneGeneratorThread extends Thread {
         audioTrack.play();
 
         //TODO Add preamble
-        for (int startIndex = 0; startIndex * configuration.getSamplesPerDataBit() < encodedBits.size(); startIndex++) {
+        for (int startIndex = 0; startIndex * configuration.getSamplesPerDataBit()< encodedBits.size() && !this.isInterrupted(); startIndex++) {
             playTone(startIndex * configuration.getSamplesPerDataBit());
+            Log.d("ToneGen", "play tone called");
         }
 
         audioTrack.release();
@@ -51,9 +51,7 @@ public class ToneGeneratorThread extends Thread {
     public void playTone(int startIndex) {
 
         double samples[] = new double[configuration.getSamplesPerDataBit()];
-
         byte modulatedWaveData[] = new byte[2 * configuration.getSamplesPerDataBit()];
-
         double angle = (2 * Math.PI * configuration.getCarrierFrequency()) / configuration.getSamplingRate();
 
         for (int n = 0; n < configuration.getSamplesPerDataBit(); n++) {
@@ -99,7 +97,6 @@ public class ToneGeneratorThread extends Thread {
         this.interrupt();
         if (audioTrack != null) {
             audioTrack.stop();
-            audioTrack.release();
         }
     }
 

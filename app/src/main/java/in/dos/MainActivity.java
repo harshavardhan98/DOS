@@ -1,17 +1,26 @@
 package in.dos;
 
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
 
 import com.speak.Speak;
+import com.speak.receiver.Receiver;
+import com.speak.receiver.RecorderThread;
 import com.speak.sender.Sender;
 import com.speak.utils.Configuration;
+
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -24,21 +33,79 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         btn_abort = findViewById(R.id.btn_abort);
-
-        speak = new Speak(new Configuration());
-        speak.send("testdsf", new Sender.SenderCallBack() {
-            @Override
-            public void onSendComplete() {
-                Log.d("TAG", "SEND COMPLETED");
-            }
-        });
-
         btn_abort.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                speak.stopSending();
+                speak.stopListening();
             }
         });
+        receive();
+    }
+
+    public void receive() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.RECORD_AUDIO}, 0);
+        }else{
+            speak = new Speak(new Configuration());
+            speak.startListening(new Receiver.ReceiverCallBack() {
+                @Override
+                public void onDataReceived(String message) {
+                    Log.d("DATA RECEIVED", message);
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case 0: {
+                //If user granted permission on mic, continue with listening
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    receive();
+                }
+                break;
+            }
+        }
+    }
+
+    public void compress(String inputString) {
+        try {
+            // Encode a String into bytes
+            Log.d("Input", inputString);
+            byte[] input = inputString.getBytes("UTF-8");
+            Log.d("Data", new String(input) + "  " + input.length);
+
+            // Compress the bytes
+            byte[] output = new byte[100];
+            Deflater compresser = new Deflater();
+            compresser.setInput(input);
+            compresser.finish();
+            int compressedDataLength = compresser.deflate(output);
+            Log.d("TAG", "Compressed Data");
+            Log.d("Data", new String(output) + "   " + compressedDataLength);
+            compresser.end();
+
+            // Decompress the bytes
+            Inflater decompresser = new Inflater();
+            decompresser.setInput(output, 0, compressedDataLength);
+            byte[] result = new byte[100];
+            int resultLength = decompresser.inflate(result);
+            decompresser.end();
+            Log.d("Result", new String(result) + "  " + resultLength);
+            Log.d("Result", new String(result).charAt(resultLength - 1) + "");
+
+
+            // Decode the bytes into a String
+            String outputString = new String(result, 0, resultLength, "UTF-8");
+        } catch (java.io.UnsupportedEncodingException ex) {
+            // handle
+        } catch (java.util.zip.DataFormatException ex) {
+            // handle
+        }
 
     }
 }
