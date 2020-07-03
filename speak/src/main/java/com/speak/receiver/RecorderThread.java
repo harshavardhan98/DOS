@@ -7,6 +7,7 @@ import android.util.Log;
 
 import com.speak.utils.Configuration;
 
+import java.util.Calendar;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class RecorderThread extends Thread {
@@ -36,7 +37,10 @@ public class RecorderThread extends Thread {
 
         while(!this.isInterrupted()){
             byte[] buffer = new byte[88200];
-            Log.d("buffer", audioRecord.read(buffer, 0, 88200)+"");
+            long before = Calendar.getInstance().getTimeInMillis();
+            audioRecord.read(buffer, 0, 88200);
+            long after = Calendar.getInstance().getTimeInMillis();
+            Log.d("DIFF", after-before+"");
             try {
                 arrayBlockingQueue.put(buffer);
             } catch (InterruptedException e) {
@@ -53,4 +57,5 @@ public class RecorderThread extends Thread {
             audioRecord.release();
         }
     }
+
 }

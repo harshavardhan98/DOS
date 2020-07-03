@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.speak.utils.Configuration;
 
+import java.util.Calendar;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class DataProcessorThread extends Thread{
@@ -31,7 +32,6 @@ public class DataProcessorThread extends Thread{
             try {
                 byte[] buff = (byte[]) arrayBlockingQueue.take();
                 // TODO Process data here
-                Log.d("data at 14", String.valueOf(buff[14]));
             } catch (InterruptedException e) {
                 e.printStackTrace();
                 this.interrupt();
