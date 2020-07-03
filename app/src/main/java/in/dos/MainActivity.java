@@ -5,27 +5,22 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-
 import com.speak.Speak;
 import com.speak.receiver.Receiver;
-import com.speak.receiver.RecorderThread;
-import com.speak.sender.Sender;
 import com.speak.utils.Configuration;
-
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 
 public class MainActivity extends AppCompatActivity {
 
-    Button btn_abort;
+    Button btn_abort,btn_send,btn_receive;
     Speak speak;
 
     @Override
@@ -33,13 +28,28 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         btn_abort = findViewById(R.id.btn_abort);
+        speak = new Speak(new Configuration());
         btn_abort.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 speak.stopListening();
             }
         });
-        receive();
+
+        btn_receive.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                receive();
+            }
+        });
+
+        btn_send.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                speak.startSending("Test Data");
+            }
+        });
+
     }
 
     public void receive() {
@@ -47,7 +57,6 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.RECORD_AUDIO}, 0);
         }else{
-            speak = new Speak(new Configuration());
             speak.startListening(new Receiver.ReceiverCallBack() {
                 @Override
                 public void onDataReceived(String message) {
