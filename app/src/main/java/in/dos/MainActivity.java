@@ -28,6 +28,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         btn_abort = findViewById(R.id.btn_abort);
+        btn_send = findViewById(R.id.btn_send);
+        btn_receive = findViewById(R.id.btn_receive);
         speak = new Speak(new Configuration());
         btn_abort.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -46,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                speak.startSending("Test Data");
+                speak.startSending("TestData");
             }
         });
 

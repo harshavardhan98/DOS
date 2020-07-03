@@ -29,12 +29,12 @@ public class BitManipulationHelper {
             bitString += String.format("%8s", Integer.toBinaryString(i & 0xFF)).replace(' ', '0');
         }
 
-        return new ArrayList<String>(Arrays.asList(bitString.split("")));
+        return new ArrayList<String>(Arrays.asList(bitString.split("(?!^)")));
     }
 
     public ArrayList<String> generatePseudoRandomSequence(final String seed) {
         String pseudoRandomSequence = "";
-        List<String> seedArray = new ArrayList<>(Arrays.asList(seed.split("")));
+        List<String> seedArray = new ArrayList<>(Arrays.asList(seed.split("(?!^)")));
         // todo: Check for Integer overflow
         int size = (int) (Math.pow(2, seed.length()) - 1);
 
@@ -45,7 +45,7 @@ public class BitManipulationHelper {
             seedArray.add(xoredValue);
         }
 
-        return new ArrayList<String>(Arrays.asList(pseudoRandomSequence.split("")));
+        return new ArrayList<String>(Arrays.asList(pseudoRandomSequence.split("(?!^)")));
     }
 
     public ArrayList<Byte> interpolateDataBits(ArrayList<String> bitString) {

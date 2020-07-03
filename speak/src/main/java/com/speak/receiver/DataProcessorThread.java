@@ -30,7 +30,7 @@ public class DataProcessorThread extends Thread{
     public void run() {
         while(!this.isInterrupted()){
             try {
-                byte[] buff = (byte[]) arrayBlockingQueue.take();
+                short[] buff = (short[]) arrayBlockingQueue.take();
                 // TODO Process data here
             } catch (InterruptedException e) {
                 e.printStackTrace();

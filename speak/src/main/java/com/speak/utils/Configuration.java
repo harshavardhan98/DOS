@@ -17,7 +17,7 @@ public class Configuration {
         this.samplingRate = 44100;
         this.bitDuration = 0.2;
         this.spreadingFactor = 4;
-        this.carrierFrequency = 10000;
+        this.carrierFrequency = 18000;
         setDependentData();
     }
 

@@ -36,9 +36,9 @@ public class RecorderThread extends Thread {
         audioRecord.startRecording();
 
         while(!this.isInterrupted()){
-            byte[] buffer = new byte[88200];
+            short[] buffer = new short[22050];
             long before = Calendar.getInstance().getTimeInMillis();
-            audioRecord.read(buffer, 0, 88200);
+            audioRecord.read(buffer, 0, 22050);
             long after = Calendar.getInstance().getTimeInMillis();
             Log.d("DIFF", after-before+"");
             try {
