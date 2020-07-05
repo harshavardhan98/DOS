@@ -8,6 +8,14 @@ import com.speak.utils.Configuration;
 import java.util.Calendar;
 import java.util.concurrent.ArrayBlockingQueue;
 
+/*
+  1. Filter define
+  2. RSSI
+  3. SineRemoval
+  4. Low Pass filter & amplify
+* */
+
+
 public class DataProcessorThread extends Thread{
     Configuration configuration;
     ArrayBlockingQueue arrayBlockingQueue;
