@@ -13,7 +13,7 @@ public class Configuration {
     private Integer samplesPerCodeBit;
 
     public Configuration() {
-        this.seedValue = "1111";
+        this.seedValue = "10000011";
         this.samplingRate = 44100;
         this.bitDuration = 0.2;
         this.spreadingFactor = 4;

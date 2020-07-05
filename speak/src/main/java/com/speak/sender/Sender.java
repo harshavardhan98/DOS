@@ -23,7 +23,7 @@ public class Sender {
         ArrayList<String> pseudoRandomSequence = bitManipulationHelper.generatePseudoRandomSequence(configuration.getSeedValue());
         ArrayList<Byte> interpolatedDataBits = bitManipulationHelper.interpolateDataBits(inputBits);
         ArrayList<Byte> interpolatedCodeBits = bitManipulationHelper.interpolateCodeBits(pseudoRandomSequence);
-        return bitManipulationHelper.encodeBits(interpolatedCodeBits, interpolatedDataBits);
+        return bitManipulationHelper.encodeBits(interpolatedCodeBits, interpolatedDataBits,pseudoRandomSequence);
     }
 
 
