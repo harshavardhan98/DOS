@@ -21,7 +21,7 @@ public class BitManipulationHelper {
         return a.equals(b) ? (byte) -1 : (byte) 1;
     }
 
-    public ArrayList<String> getBits(final String input) {
+    public ArrayList<String> convertAsciiToBinary(final String input) {
         String bitString = "";
         byte[] inputBytes = input.getBytes();
 
@@ -85,7 +85,10 @@ public class BitManipulationHelper {
         }
 
         for(int i=0;i<pseudoRandomSequence.size();i++){
-            encodedBits.add(pseudoRandomSequence.get(i).equals("0")?(byte)-1:(byte)1);
+            byte sampleBit = pseudoRandomSequence.get(i).equals("0")?(byte)-1:(byte)1;
+            for(int j=1;j<=configuration.getSamplesPerCodeBit();j++){
+                encodedBits.add(sampleBit);
+            }
         }
     }
 
@@ -102,9 +105,7 @@ public class BitManipulationHelper {
             encodedBits.add(polarisedXor(interpolatedDataBits.get(i), interpolatedCodeBits.get(i % codeBitsLength)));
             // xored output is polarised ( 0's will be replaced by -1)
         }
-        // 423360+0.2*44100+127 -> 432307
+        // 423360+0.2*44100+127*147 -> 4,50,849
         return encodedBits;
     }
 }
-
-// 111111110000000100000011000001010000111100010001001100110101010111111110000000100000011000001010000111100010001001100110101010111111110000000100000011000001010000111100010001001100110101010111111110000000100000011000001010000111100010001001100110101010111

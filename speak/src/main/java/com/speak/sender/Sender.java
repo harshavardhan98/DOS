@@ -19,7 +19,7 @@ public class Sender {
     ArrayList<Byte> getEncodedBits(String input, Configuration configuration) {
 
         BitManipulationHelper bitManipulationHelper = new BitManipulationHelper(configuration);
-        ArrayList<String> inputBits = bitManipulationHelper.getBits(input);
+        ArrayList<String> inputBits = bitManipulationHelper.convertAsciiToBinary(input);
         ArrayList<String> pseudoRandomSequence = bitManipulationHelper.generatePseudoRandomSequence(configuration.getSeedValue());
         ArrayList<Byte> interpolatedDataBits = bitManipulationHelper.interpolateDataBits(inputBits);
         ArrayList<Byte> interpolatedCodeBits = bitManipulationHelper.interpolateCodeBits(pseudoRandomSequence);

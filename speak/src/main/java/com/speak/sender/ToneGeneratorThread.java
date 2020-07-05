@@ -34,11 +34,11 @@ public class ToneGeneratorThread extends Thread {
                 AudioTrack.MODE_STREAM);
         audioTrack.play();
 
-        //TODO Add preamble
-        for (int startIndex = 0; startIndex * configuration.getSamplesPerDataBit()< encodedBits.size() && !this.isInterrupted(); startIndex++) {
-            playTone(startIndex * configuration.getSamplesPerDataBit());
-            Log.d("ToneGen", "play tone called");
-        }
+        playTone();
+//        for (int startIndex = 0; startIndex * configuration.getSamplesPerDataBit()< encodedBits.size() && !this.isInterrupted(); startIndex++) {
+//            playTone(startIndex * configuration.getSamplesPerDataBit());
+//            Log.d("ToneGen", "play tone called");
+//        }
 
         audioTrack.release();
         audioTrack = null;
@@ -48,23 +48,23 @@ public class ToneGeneratorThread extends Thread {
     }
 
     //Called to play tone of specific frequency for specific duration
-    public void playTone(int startIndex) {
+    public void playTone() {
 
-        double samples[] = new double[configuration.getSamplesPerDataBit()];
-        byte modulatedWaveData[] = new byte[2 * configuration.getSamplesPerDataBit()];
+        double samples[] = new double[148];
+        byte modulatedWaveData[] = new byte[2 * encodedBits.size()];
         double angle = (2 * Math.PI * configuration.getCarrierFrequency()) / configuration.getSamplingRate();
 
-        for (int n = 0; n < configuration.getSamplesPerDataBit(); n++) {
+        for (int n = 0; n < 147; n++) {
             samples[n] = Math.sin(n * angle);
         }
 
-        for (int i = 0; i < configuration.getSamplesPerDataBit(); i++) {
+        for (int i = 0; i < encodedBits.size(); i++) {
 
             // Amplitude * sin( 2 * pi * f * n ) / fs
             // f -> Carrier frequency
             // fs -> Sampling frequency
 
-            final short sampleValue = (short) ((encodedBits.get(startIndex + i) * 32767 * samples[i]));
+            final short sampleValue = (short) ((encodedBits.get(i) * 32767 * samples[i%147]));
             final int index = 2 * i;
             modulatedWaveData[index] = (byte) (sampleValue & 0x00ff);
             modulatedWaveData[index + 1] = (byte) ((sampleValue & 0xff00) >>> 8);
@@ -72,7 +72,9 @@ public class ToneGeneratorThread extends Thread {
 
         try {
             // Play the track
+            Log.d("testing","Starting time");
             audioTrack.write(modulatedWaveData, 0, modulatedWaveData.length);
+            Log.d("testing","Ending time");
         } catch (Exception e) {
             e.printStackTrace();
         }
