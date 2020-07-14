@@ -17,9 +17,17 @@ public class ReceiverUtils {
     public static final String BLOCKS_KEY = "block_data";
     public static final String PREFIX_KEY = "prefix_data";
 
-    final Double[] lpfCoefficients = new Double[]{ 0.0006,0.0021,0.0039,0.0039,-0.0011,-0.0121,-0.0245,-0.0274,-0.0078,0.0409,
-                                                      0.1115,0.1826,0.2274,0.2274,0.1826,0.1115,0.0409,-0.0078,-0.0274,-0.0245,
-                                                     -0.0121,-0.0011,0.0039,0.0039,0.0021,0.0006 };
+    final Double[] lpfCoefficients = new Double[]{
+                                                    -0.0005,-0.0018,-0.0044,-0.0078,-0.0108,-0.0105,-0.0036,0.0129,0.0397,0.0744,
+                                                     0.1110,0.1419,0.1596,0.1596,0.1419,0.1110,0.0744,0.0397,0.0129,-0.0036,
+                                                    -0.0105,-0.0108,-0.0078,-0.0044,-0.0018,-0.0005 };
+
+    final Double[] hpfCoefficients = new Double[] {
+                                                    0.0010,-0.0009,-0.0021,0.0065,-0.0051,-0.0074,0.0238,-0.0219,-0.0153,0.0715,
+                                                    -0.0882, -0.0213, 0.5598 ,0.5598,-0.0213,-0.0882,0.0715,-0.0153,-0.0219,0.0238,
+                                                    -0.0074,-0.0051,0.0065,-0.0021,-0.0009,0.0010
+                                                  };
+
 
     Configuration configuration;
 
@@ -30,7 +38,7 @@ public class ReceiverUtils {
     }
 
     public Integer[] removeSine(short[] transmittedData, Double[] prefix){
-        Double[] processedData = highPassFilter(transmittedData, lpfCoefficients);
+        Double[] processedData = highPassFilter(transmittedData, hpfCoefficients);
         processedData = multiplySine(processedData, prefix);
         processedData = lowPassFilter(processedData, lpfCoefficients);
         return polarizeData(processedData);
@@ -50,7 +58,7 @@ public class ReceiverUtils {
         return processedData;
     }
 
-    // todo -> where is the extra 25 bits ??? and one index problem
+
     public Double[] lowPassFilter(Double[] sineProcessedData, Double[] filterCoefficients){
 
         final int n = filterCoefficients.length , m = sineProcessedData.length;
@@ -88,19 +96,6 @@ public class ReceiverUtils {
         }
         return polarizedData;
     }
-
-/*
-    blocks = floor(dsize/147);
-    y_eqc = y_eq(13:end-12);
-    y_bit = zeros(1,blocks);
-    y_bit(1) = -1;
-    for i = 2:blocks
-        for j = 1:147
-        y_bit(i) = y_bit(i)+y_eqc((i-1)*147 + j);
-        end
-        y_bit(i) = y_bit(i)/147;
-        end
-  */
 
     public HashMap<String, Integer[]> reduceBlockDataToBits(Integer[] processedData, int startIndex, Integer[] prefix){
         ArrayList<Integer> blockData = new ArrayList<>();

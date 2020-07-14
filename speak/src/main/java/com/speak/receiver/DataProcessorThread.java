@@ -1,11 +1,13 @@
 package com.speak.receiver;
 
 import android.os.Handler;
+import android.util.Log;
 
 import com.speak.utils.Configuration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /*
@@ -27,12 +29,18 @@ public class DataProcessorThread extends Thread{
     ReceiverUtils receiverUtils;
     ProcessState processState;
     int dataStartIndex;
+    ArrayList<String> prbsSequence;
+    ArrayList<Integer> blocks;
+    String finalBinaryData;
+    String finalData;
+    Integer prbsSequenceIndex;
 
     public DataProcessorThread(
             Configuration configuration,
             ArrayBlockingQueue arrayBlockingQueue,
             Receiver.ReceiverCallBack receiverCallBack,
-            Handler handler)
+            Handler handler,
+            ArrayList<String> prbsSequence)
     {
         this.configuration = configuration;
         this.arrayBlockingQueue = arrayBlockingQueue;
@@ -40,7 +48,13 @@ public class DataProcessorThread extends Thread{
         this.handler = handler;
         receiverUtils = new ReceiverUtils(configuration);
         processState = ProcessState.initialCarrierSync;
+        blocks = new ArrayList<>();
+        blocks.add(-1);
         dataStartIndex = -1;
+        this.prbsSequence = prbsSequence;
+        prbsSequenceIndex = 0;
+        finalBinaryData = "";
+        finalData ="";
     }
 
     // p(i) = sum(data(i:(i+bit_delay-1)))-sum(data((i+bit_delay):(i-1+2*bit_delay)));
@@ -49,6 +63,7 @@ public class DataProcessorThread extends Thread{
     public void run() {
         Double[] prefix = new Double[configuration.getSamplesPerCodeBit()];
         Integer[] processedDataPrefix = new Integer[4 * configuration.getSamplesPerCodeBit()];
+        Integer[] blockPrefix = new Integer[0];
         Arrays.fill(prefix,-1);
         Arrays.fill(processedDataPrefix,-1);
         while(!this.isInterrupted()){
@@ -61,14 +76,47 @@ public class DataProcessorThread extends Thread{
                     prefix[i] = (double) buff[i];
                 }
 
-                processedData = combineArrays(processedDataPrefix, processedData);
                 if(processState==ProcessState.initialCarrierSync){
+                    processedData = combineArrays(processedDataPrefix, processedData);
                     for(int i=0; i<processedData.length - 4 * configuration.getSamplesPerCodeBit(); i++){
-                        if(checkIfPreamble(i,processedData))break;
+                        if(checkIfPreamble(i,processedData)) {
+                            HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
+                                                                                                (dataStartIndex+configuration.getSamplesPerCodeBit()*4),
+                                                                                                blockPrefix);
+                            blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
+                            if(checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY))){
+                                if(retrieveData(new Integer[]{})){
+                                    abort();
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    for(int i =0; i<processedDataPrefix.length; i++){
+                        processedDataPrefix[i] = processedData[processedData.length - processedDataPrefix.length + i];
                     }
                 }
-                for(int i =0; i<processedDataPrefix.length; i++){
-                    processedDataPrefix[i] = processedData[processedData.length - processedDataPrefix.length + i];
+                else if(processState == ProcessState.CodeSync){
+                    HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
+                                                (dataStartIndex+configuration.getSamplesPerCodeBit()*4)%processedData.length,
+                                                        blockPrefix);
+
+                    blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
+                    if(checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY))){
+                        if(retrieveData(new Integer[]{})){
+                            abort();
+                        }
+                    }
+                }else if(processState == ProcessState.DataRecovery){
+                    HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
+                            (dataStartIndex+configuration.getSamplesPerCodeBit()*4)%processedData.length,
+                            blockPrefix);
+
+                    blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
+                    if(retrieveData(data.get(ReceiverUtils.BLOCKS_KEY))){
+                            abort();
+                    }
+
                 }
 
             } catch (InterruptedException e) {
@@ -91,6 +139,7 @@ public class DataProcessorThread extends Thread{
                     - getSubArraySum(startIndex+3*configuration.getSamplesPerCodeBit(), startIndex+ 4*configuration.getSamplesPerCodeBit()-1, processedData);
             if(Math.abs(power1-power2) <20){
                 dataStartIndex = startIndex;
+                processState = ProcessState.CodeSync;
                 return true;
             }
         }
@@ -110,5 +159,65 @@ public class DataProcessorThread extends Thread{
         combinedArrayList.addAll(Arrays.asList(suffix));
         Integer[] combinedArray = combinedArrayList.toArray(new Integer[0]);
         return combinedArray;
+    }
+
+    private boolean checkPRBS(Integer[] data){
+        int index = blocks.size();
+        blocks.addAll(Arrays.asList(data));
+
+        for(int i=index;i<blocks.size();i++){
+            blocks.set(i,blocks.get(i-1)*blocks.get(i));
+        }
+
+        while(blocks.size()>=prbsSequence.size()){
+            int sum=0;
+            for(int i=0;i<prbsSequence.size();i++){
+                sum+= (2*Integer.parseInt(prbsSequence.get(i))-1)*blocks.get(i);
+            }
+            if(sum>0.7*prbsSequence.size()){
+                for(int j=0;j<prbsSequence.size();j++){
+                    blocks.remove(0);
+                }
+                processState = ProcessState.DataRecovery;
+                return true;
+            }
+            blocks.remove(0);
+        }
+
+        return false;
+    }
+
+
+    public boolean retrieveData(Integer[] data){
+
+        int index = blocks.size();
+        blocks.addAll(Arrays.asList(data));
+
+        while(blocks.size()>=configuration.getSpreadingFactor()){
+            int sum=0;
+            for(int j=0;j<configuration.getSpreadingFactor();j++){
+                int val = blocks.get(0)*(Integer.parseInt(prbsSequence.get(prbsSequenceIndex)));
+                prbsSequenceIndex = (prbsSequenceIndex+1)%prbsSequence.size();
+                blocks.remove(0);
+                sum+=val;
+            }
+
+            finalBinaryData +=(sum/60>0)?"1":"0";
+            if(checkFinalData()) return true;
+        }
+
+        return false;
+    }
+
+    public boolean checkFinalData(){
+        if(finalBinaryData.length()==8){
+            int charCode = Integer.parseInt(finalBinaryData, 2);
+            String str = new Character((char)charCode).toString();
+            finalData +=str;
+            if(str=="$") return true;
+            Log.d("data",str);
+            finalBinaryData = "";
+        }
+        return false;
     }
 }

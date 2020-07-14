@@ -32,7 +32,8 @@ public class BitManipulationHelper {
         return new ArrayList<String>(Arrays.asList(bitString.split("(?!^)")));
     }
 
-    public ArrayList<String> generatePseudoRandomSequence(final String seed) {
+    public ArrayList<String> generatePseudoRandomSequence() {
+        String seed = configuration.getSeedValue();
         String pseudoRandomSequence = "";
         List<String> seedArray = new ArrayList<>(Arrays.asList(seed.split("(?!^)")));
         // todo: Check for Integer overflow

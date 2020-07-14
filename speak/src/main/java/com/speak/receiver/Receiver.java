@@ -7,8 +7,10 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.speak.utils.BitManipulationHelper;
 import com.speak.utils.Configuration;
 
+import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /*
@@ -39,7 +41,8 @@ public class Receiver {
         stopExistingThreads();
         arrayBlockingQueue = new ArrayBlockingQueue<byte[]>(15);
         recorderThread = new RecorderThread(configuration, arrayBlockingQueue);
-        dataProcessorThread = new DataProcessorThread(configuration, arrayBlockingQueue, receiverCallBack, handler);
+        ArrayList<String> prbsSequence = new BitManipulationHelper(configuration).generatePseudoRandomSequence();
+        dataProcessorThread = new DataProcessorThread(configuration, arrayBlockingQueue, receiverCallBack, handler,prbsSequence);
         recorderThread.start();
         dataProcessorThread.start();
 
