@@ -62,7 +62,7 @@ public class DataProcessorThread extends Thread{
     @Override
     public void run() {
         Double[] prefix = new Double[configuration.getSamplesPerCodeBit()];
-        Integer[] processedDataPrefix = new Integer[4 * configuration.getSamplesPerCodeBit()];
+        Integer[] processedDataPrefix = new Integer[5 * configuration.getSamplesPerCodeBit()];
         Integer[] blockPrefix = new Integer[0];
         Arrays.fill(prefix,-1);
         Arrays.fill(processedDataPrefix,-1);
@@ -78,7 +78,7 @@ public class DataProcessorThread extends Thread{
 
                 if(processState==ProcessState.initialCarrierSync){
                     processedData = combineArrays(processedDataPrefix, processedData);
-                    for(int i=0; i<processedData.length - 4 * configuration.getSamplesPerCodeBit(); i++){
+                    for(int i=0; i<processedData.length - 5 * configuration.getSamplesPerCodeBit(); i++){
                         if(checkIfPreamble(i,processedData)) {
                             HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
                                                                                                 (dataStartIndex+configuration.getSamplesPerCodeBit()*4),
@@ -135,6 +135,16 @@ public class DataProcessorThread extends Thread{
         power1 = getSubArraySum(startIndex,startIndex+configuration.getSamplesPerCodeBit()-1, processedData)
                 - getSubArraySum(startIndex+configuration.getSamplesPerCodeBit(), startIndex+ 2*configuration.getSamplesPerCodeBit()-1, processedData);
         if (power1>=200){
+            int maxIndex= startIndex,maxPower=power1;
+            for(int i=1;i<=configuration.getSamplesPerCodeBit();i++){
+                power1 = getSubArraySum(startIndex+i,startIndex+i+configuration.getSamplesPerCodeBit()-1, processedData)
+                        - getSubArraySum(startIndex+i+configuration.getSamplesPerCodeBit(), startIndex+i+ 2*configuration.getSamplesPerCodeBit()-1, processedData);
+                if(power1>maxPower){
+                    maxPower=power1;
+                    maxIndex = i;
+                }
+            }
+            startIndex = maxIndex;
             power2 = getSubArraySum(startIndex + 2*configuration.getSamplesPerCodeBit(),startIndex+3*configuration.getSamplesPerCodeBit()-1, processedData)
                     - getSubArraySum(startIndex+3*configuration.getSamplesPerCodeBit(), startIndex+ 4*configuration.getSamplesPerCodeBit()-1, processedData);
             if(Math.abs(power1-power2) <20){
