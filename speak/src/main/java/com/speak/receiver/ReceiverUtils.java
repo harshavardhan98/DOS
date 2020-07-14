@@ -1,11 +1,23 @@
 package com.speak.receiver;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.speak.utils.Configuration;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class ReceiverUtils {
+    public static final String BLOCKS_KEY = "block_data";
+    public static final String PREFIX_KEY = "prefix_data";
 
-    final Double[] filterCoefficients = new Double[]{ 0.0006,0.0021,0.0039,0.0039,-0.0011,-0.0121,-0.0245,-0.0274,-0.0078,0.0409,
+    final Double[] lpfCoefficients = new Double[]{ 0.0006,0.0021,0.0039,0.0039,-0.0011,-0.0121,-0.0245,-0.0274,-0.0078,0.0409,
                                                       0.1115,0.1826,0.2274,0.2274,0.1826,0.1115,0.0409,-0.0078,-0.0274,-0.0245,
                                                      -0.0121,-0.0011,0.0039,0.0039,0.0021,0.0006 };
 
@@ -17,43 +29,64 @@ public class ReceiverUtils {
         this.configuration = configuration;
     }
 
-    public double[] removeSine(short[] transmittedData){
-        double[] processedData = multiplySine(transmittedData);
-        processedData = performConvolution(processedData);
-        return processedData;
+    public Integer[] removeSine(short[] transmittedData, Double[] prefix){
+        Double[] processedData = highPassFilter(transmittedData, lpfCoefficients);
+        processedData = multiplySine(processedData, prefix);
+        processedData = lowPassFilter(processedData, lpfCoefficients);
+        return polarizeData(processedData);
     }
 
+    public Double[] multiplySine(Double[] highPassFilterResult, Double[] prefix){
+        final int dataSize = highPassFilterResult.length;
+        Double[] processedData = new Double[dataSize];
 
-    public double[] multiplySine(short[] transmittedData){
-        final int dsize = transmittedData.length;
-        int n = dsize-147;
-        double[] processedData = new double[dsize];
-
-        for(int i=0;i<n;i++){
-            processedData[147+i] = transmittedData[i]*transmittedData[147+i];
+        for(int i=0;i<configuration.getSamplesPerCodeBit();i++){
+            processedData[i] = prefix[i]*highPassFilterResult[147+i];
         }
+        for(int i=configuration.getSamplesPerCodeBit();i<dataSize;i++){
+            processedData[i] = highPassFilterResult[i-configuration.getSamplesPerCodeBit()]*highPassFilterResult[i];
+        }
+
         return processedData;
     }
-
 
     // todo -> where is the extra 25 bits ??? and one index problem
-    public double[] performConvolution(double[] sineProcessedData){
+    public Double[] lowPassFilter(Double[] sineProcessedData, Double[] filterCoefficients){
 
         final int n = filterCoefficients.length , m = sineProcessedData.length;
-        double[] processedData = new double[m];
+        Double[] processedData = new Double[m];
         Arrays.fill(processedData,0);
 
-        for(int i=n-1;i<m;i++){
+        for(int i=n;i<m+n;i++){
             for(int j=0;j<n;j++){
-                processedData[i] = processedData[i]+filterCoefficients[j] * sineProcessedData[i-j+1];
+                processedData[i-n] = processedData[i-n]+filterCoefficients[j] * sineProcessedData[i-j-1];
             }
         }
+        return processedData;
+    }
 
-        // addition of hyteresis
-        for(int i=0;i<processedData.length;i++){
-            processedData[i] = (processedData[i]>0)?1:-1;
+    public Double[] highPassFilter(short[] sineProcessedData, Double[] filterCoefficients){
+
+        final int n = filterCoefficients.length , m = sineProcessedData.length;
+        Double[] processedData = new Double[m];
+        Arrays.fill(processedData,0);
+
+        for(int i=n;i<m+n;i++){
+            for(int j=0;j<n;j++){
+                processedData[i-n] = processedData[i-n]+filterCoefficients[j] * sineProcessedData[i-j-1];
+            }
+            processedData[i-n] = sineProcessedData[i-n] - processedData[i-n];
         }
         return processedData;
+    }
+
+    public Integer[] polarizeData(Double[] unPolarizedData){
+
+        Integer[] polarizedData = new Integer[unPolarizedData.length];
+        for(int i=0;i<unPolarizedData.length;i++){
+            polarizedData[i] = (unPolarizedData[i]>0)?1:-1;
+        }
+        return polarizedData;
     }
 
 /*
@@ -69,19 +102,34 @@ public class ReceiverUtils {
         end
   */
 
-    public double[] reduceBlockDataToBits(double[] sineRemovedData){
-        final int blocks = (int) Math.floor((sineRemovedData.length-25)/147);
-        double[] dataBit = new double[blocks];
-        Arrays.fill(dataBit,0);
-        dataBit[0] = -1;
+    public HashMap<String, Integer[]> reduceBlockDataToBits(Integer[] processedData, int startIndex, Integer[] prefix){
+        ArrayList<Integer> blockData = new ArrayList<>();
+        ArrayList<Integer> newPrefix = new ArrayList<>();
+        HashMap<String, Integer[]> result = new HashMap<>();
 
-        for(int i=1;i<blocks;i++){
-            for(int j=0;j<147;j++){
-                dataBit[i] = dataBit[i] + sineRemovedData[(i-1)*147 + j +25];
-            }
-            dataBit[i] = ((dataBit[i]/147)<0)?(-1*dataBit[i-1]):dataBit[i-1];
+        if(prefix.length>0){
+            ArrayList<Integer> prefixArrayList = new ArrayList<>(Arrays.asList(prefix));
+            prefixArrayList.addAll(Arrays.asList(processedData));
+            processedData = prefixArrayList.toArray(new Integer[0]);
         }
-        return dataBit;
+        while(startIndex<processedData.length){
+            if(startIndex + configuration.getSamplesPerCodeBit() -1 <= processedData.length){
+                int sum = 0;
+                for(int i=startIndex; i< startIndex+configuration.getSamplesPerCodeBit(); i++){
+                    sum+=processedData[i];
+                }
+                startIndex+=configuration.getSamplesPerCodeBit();
+                blockData.add((sum/configuration.getSamplesPerCodeBit() > 0)?1:-1);
+            }else {
+                for(int i=startIndex; i<processedData.length; i++){
+                    newPrefix.add(processedData[i]);
+                }
+                startIndex+=configuration.getSamplesPerCodeBit();
+            }
+        }
+        result.put(PREFIX_KEY, newPrefix.toArray(new Integer[0]));
+        result.put(BLOCKS_KEY, blockData.toArray(new Integer[0]));
+        return result;
     }
 
     /*
@@ -95,17 +143,17 @@ public class ReceiverUtils {
         end
     * */
 
-    public int correlation(double[] inputData,String pseudoRandomSequence){
+    public int correlation(Double[] inputData,String pseudoRandomSequence){
 
-        final double threshold = 0.8;
-        double[] corr = new double[inputData.length];
+        final Double threshold = 0.8;
+        Double[] corr = new Double[inputData.length];
         Arrays.fill(corr,0);
         int startIndex = -1;
-        double maxData = Double.MIN_VALUE;
+        Double maxData = Double.MIN_VALUE;
 
         for(int i=0;i<inputData.length-127;i++){
             for(int j=0;j<127;j++){
-                corr[i] = corr[i]  + (double)(pseudoRandomSequence.charAt(j)-'0')*inputData[i+j-1];
+                corr[i] = corr[i]  + (Integer)(pseudoRandomSequence.charAt(j)-'0')*inputData[i+j-1];
             }
 
             if(corr[i]>=threshold){

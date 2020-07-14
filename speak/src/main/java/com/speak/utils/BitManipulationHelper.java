@@ -79,14 +79,23 @@ public class BitManipulationHelper {
 
     public void addPreamble(ArrayList<Byte> encodedBits,ArrayList<String> pseudoRandomSequence){
 
-        // adding -1 bits for 200ms to sync receiver even during receiver delays
-        for(int i=0;i<configuration.getSamplingRate()*0.2;i++){
-            encodedBits.add((byte)-1);
+        // adding preamble before PRBS bits and data bits
+        int[] preamble = new int[]{1,0,0,1,1,0};
+        for (int i=0; i<preamble.length; i++){
+            for (int j=0; j<configuration.getSamplesPerCodeBit(); j++){
+                encodedBits.add((byte) (2*preamble[i]-1));
+            }
         }
+
+        //todo Ask Kamal if this would be necessary
+//        // adding -1 bits for 200ms to sync receiver even during receiver delays
+//        for(int i=0;i<configuration.getSamplingRate()*0.2;i++){
+//            encodedBits.add((byte)-1);
+//        }
 
         for(int i=0;i<pseudoRandomSequence.size();i++){
             byte sampleBit = pseudoRandomSequence.get(i).equals("0")?(byte)-1:(byte)1;
-            for(int j=1;j<=configuration.getSamplesPerCodeBit();j++){
+            for(int j=0;j<configuration.getSamplesPerCodeBit();j++){
                 encodedBits.add(sampleBit);
             }
         }

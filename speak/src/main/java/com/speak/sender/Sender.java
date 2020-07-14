@@ -26,7 +26,6 @@ public class Sender {
         return bitManipulationHelper.encodeBits(interpolatedCodeBits, interpolatedDataBits,pseudoRandomSequence);
     }
 
-
     public void sendData(final String input, final Configuration configuration, final SenderCallBack senderCallBack) {
         ArrayList<Byte> encodedBits = getEncodedBits(input, configuration);
         Handler handler = new Handler(Looper.getMainLooper(), new Handler.Callback() {
