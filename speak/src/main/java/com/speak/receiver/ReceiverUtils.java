@@ -1,17 +1,10 @@
 package com.speak.receiver;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import com.speak.utils.Configuration;
-
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+
 
 public class ReceiverUtils {
     public static final String BLOCKS_KEY = "block_data";
@@ -48,11 +41,12 @@ public class ReceiverUtils {
         final int dataSize = highPassFilterResult.length;
         Double[] processedData = new Double[dataSize];
 
-        for(int i=0;i<configuration.getSamplesPerCodeBit();i++){
-            processedData[i] = prefix[i]*highPassFilterResult[147+i];
-        }
-        for(int i=configuration.getSamplesPerCodeBit();i<dataSize;i++){
-            processedData[i] = highPassFilterResult[i-configuration.getSamplesPerCodeBit()]*highPassFilterResult[i];
+        for(int i=0;i<dataSize;i++){
+            if(i-configuration.getSamplesPerCodeBit()<0){
+                processedData[i] = prefix[i]*highPassFilterResult[i];
+            }else{
+                processedData[i] = highPassFilterResult[i-configuration.getSamplesPerCodeBit()]*highPassFilterResult[i];
+            }
         }
         for(int i =0; i<prefix.length; i++){
             prefix[i] = highPassFilterResult[highPassFilterResult.length - prefix.length+i];

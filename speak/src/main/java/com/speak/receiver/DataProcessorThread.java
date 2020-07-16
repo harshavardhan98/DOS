@@ -2,9 +2,7 @@ package com.speak.receiver;
 
 import android.os.Handler;
 import android.util.Log;
-
 import com.speak.utils.Configuration;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -102,8 +100,8 @@ public class DataProcessorThread extends Thread{
                 }
                 else if(processState == ProcessState.CodeSync){
                     HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
-                                                (dataStartIndex+configuration.getSamplesPerCodeBit()*4)%processedData.length,
-                                                        blockPrefix);
+                                                  0,
+                                                            blockPrefix);
 
                     blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
                     if(checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY))){
@@ -179,9 +177,9 @@ public class DataProcessorThread extends Thread{
         int index = blocks.size();
         blocks.addAll(Arrays.asList(data));
 
-//        for(int i=index;i<blocks.size();i++){
-//            blocks.set(i,blocks.get(i-1)*blocks.get(i));
-//        }
+        for(int i=index;i<blocks.size();i++){
+            blocks.set(i,blocks.get(i-1)*blocks.get(i));
+        }
 
         while(blocks.size()>=prbsSequence.size()){
             int sum=0;
