@@ -37,10 +37,10 @@ public class ReceiverUtils {
         this.configuration = configuration;
     }
 
-    public Integer[] removeSine(short[] transmittedData, Double[] prefix){
-        Double[] processedData = highPassFilter(transmittedData, hpfCoefficients);
+    public Integer[] removeSine(short[] transmittedData, Double[] prefix,Double[] hpfPrefix,Double[] lpfPrefix){
+        Double[] processedData = highPassFilter(transmittedData, hpfCoefficients,hpfPrefix);
         processedData = multiplySine(processedData, prefix);
-        processedData = lowPassFilter(processedData, lpfCoefficients);
+        processedData = lowPassFilter(processedData, lpfCoefficients,lpfPrefix);
         return polarizeData(processedData);
     }
 
@@ -54,37 +54,57 @@ public class ReceiverUtils {
         for(int i=configuration.getSamplesPerCodeBit();i<dataSize;i++){
             processedData[i] = highPassFilterResult[i-configuration.getSamplesPerCodeBit()]*highPassFilterResult[i];
         }
+        for(int i =0; i<prefix.length; i++){
+            prefix[i] = highPassFilterResult[highPassFilterResult.length - prefix.length+i];
+        }
 
         return processedData;
     }
 
 
-    public Double[] lowPassFilter(Double[] sineProcessedData, Double[] filterCoefficients){
+    public Double[] lowPassFilter(Double[] sineProcessedData, Double[] filterCoefficients,Double[] lpfPrefix){
 
         final int n = filterCoefficients.length , m = sineProcessedData.length;
         Double[] processedData = new Double[m];
-        Arrays.fill(processedData,0);
+        Arrays.fill(processedData,0.0);
 
-        for(int i=n;i<m+n;i++){
+        for(int i=0;i<m;i++){
             for(int j=0;j<n;j++){
-                processedData[i-n] = processedData[i-n]+filterCoefficients[j] * sineProcessedData[i-j-1];
+                if(i-j<0){
+                    processedData[i] = processedData[i]+filterCoefficients[j] * lpfPrefix[lpfPrefix.length+(i-j)];
+                }else{
+                    processedData[i] = processedData[i]+filterCoefficients[j] * sineProcessedData[i-j];
+                }
             }
+        }
+
+        for(int i =0; i<lpfPrefix.length; i++){
+            lpfPrefix[i] = sineProcessedData[sineProcessedData.length-lpfPrefix.length+i];
         }
         return processedData;
     }
 
-    public Double[] highPassFilter(short[] sineProcessedData, Double[] filterCoefficients){
+    public Double[] highPassFilter(short[] transmittedData, Double[] filterCoefficients,Double[] hpfPrefix){
 
-        final int n = filterCoefficients.length , m = sineProcessedData.length;
+        final int n = filterCoefficients.length , m = transmittedData.length;
         Double[] processedData = new Double[m];
-        Arrays.fill(processedData,0);
+        Arrays.fill(processedData,0.0);
 
-        for(int i=n;i<m+n;i++){
+        for(int i=0;i<m;i++){
             for(int j=0;j<n;j++){
-                processedData[i-n] = processedData[i-n]+filterCoefficients[j] * sineProcessedData[i-j-1];
+                if(i-j<0){
+                    processedData[i] = processedData[i]+filterCoefficients[j] * hpfPrefix[hpfPrefix.length+(i-j)];
+                }else{
+                    processedData[i] = processedData[i]+filterCoefficients[j] * transmittedData[i-j];
+                }
             }
-            processedData[i-n] = sineProcessedData[i-n] - processedData[i-n];
+            processedData[i] = transmittedData[i] - processedData[i];
         }
+
+        for(int i =0; i<hpfPrefix.length; i++){
+            hpfPrefix[i] = (double) transmittedData[transmittedData.length-hpfPrefix.length+i];
+        }
+
         return processedData;
     }
 
@@ -108,7 +128,7 @@ public class ReceiverUtils {
             processedData = prefixArrayList.toArray(new Integer[0]);
         }
         while(startIndex<processedData.length){
-            if(startIndex + configuration.getSamplesPerCodeBit() -1 <= processedData.length){
+            if(startIndex + configuration.getSamplesPerCodeBit() -1 < processedData.length){
                 int sum = 0;
                 for(int i=startIndex; i< startIndex+configuration.getSamplesPerCodeBit(); i++){
                     sum+=processedData[i];
@@ -157,5 +177,12 @@ public class ReceiverUtils {
             }
         }
         return startIndex;
+    }
+
+    private Double[] combineArrays(Double[] prefix, Double[] suffix){
+        ArrayList<Double> combinedArrayList = new ArrayList(Arrays.asList(prefix));
+        combinedArrayList.addAll(Arrays.asList(suffix));
+        Double[] combinedArray = combinedArrayList.toArray(new Double[0]);
+        return combinedArray;
     }
 }

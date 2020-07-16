@@ -62,19 +62,23 @@ public class DataProcessorThread extends Thread{
     @Override
     public void run() {
         Double[] prefix = new Double[configuration.getSamplesPerCodeBit()];
+        Double[] lpfPrefix = new Double[configuration.getSamplesPerCodeBit()];
+        Double[] hpfPrefix = new Double[configuration.getSamplesPerCodeBit()];
         Integer[] processedDataPrefix = new Integer[5 * configuration.getSamplesPerCodeBit()];
         Integer[] blockPrefix = new Integer[0];
-        Arrays.fill(prefix,-1);
+        Arrays.fill(prefix,0.0);
+        Arrays.fill(lpfPrefix,0.0);
+        Arrays.fill(hpfPrefix,0.0);
         Arrays.fill(processedDataPrefix,-1);
         while(!this.isInterrupted()){
             try {
+                Log.d("data","Waiting for data");
+                Log.d("data","State: "+processState.toString());
                 short[] buff = (short[]) arrayBlockingQueue.take();
-
+                Log.d("data","Got data");
                 // TODO Process data here
-                Integer[] processedData = receiverUtils.removeSine(buff, prefix);
-                for(int i =0; i<prefix.length; i++){
-                    prefix[i] = (double) buff[i];
-                }
+                Integer[] processedData = receiverUtils.removeSine(buff, prefix,hpfPrefix,lpfPrefix);
+
 
                 if(processState==ProcessState.initialCarrierSync){
                     processedData = combineArrays(processedDataPrefix, processedData);
@@ -147,7 +151,7 @@ public class DataProcessorThread extends Thread{
             startIndex = maxIndex;
             power2 = getSubArraySum(startIndex + 2*configuration.getSamplesPerCodeBit(),startIndex+3*configuration.getSamplesPerCodeBit()-1, processedData)
                     - getSubArraySum(startIndex+3*configuration.getSamplesPerCodeBit(), startIndex+ 4*configuration.getSamplesPerCodeBit()-1, processedData);
-            if(Math.abs(power1-power2) <20){
+            if(Math.abs(maxPower-power2) <20){
                 dataStartIndex = startIndex;
                 processState = ProcessState.CodeSync;
                 return true;
@@ -175,15 +179,16 @@ public class DataProcessorThread extends Thread{
         int index = blocks.size();
         blocks.addAll(Arrays.asList(data));
 
-        for(int i=index;i<blocks.size();i++){
-            blocks.set(i,blocks.get(i-1)*blocks.get(i));
-        }
+//        for(int i=index;i<blocks.size();i++){
+//            blocks.set(i,blocks.get(i-1)*blocks.get(i));
+//        }
 
         while(blocks.size()>=prbsSequence.size()){
             int sum=0;
             for(int i=0;i<prbsSequence.size();i++){
                 sum+= (2*Integer.parseInt(prbsSequence.get(i))-1)*blocks.get(i);
             }
+            Log.d("SUM",sum+" ");
             if(sum>0.7*prbsSequence.size()){
                 for(int j=0;j<prbsSequence.size();j++){
                     blocks.remove(0);

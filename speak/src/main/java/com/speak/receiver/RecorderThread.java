@@ -40,7 +40,7 @@ public class RecorderThread extends Thread {
             long before = Calendar.getInstance().getTimeInMillis();
             audioRecord.read(buffer, 0, 22050);
             long after = Calendar.getInstance().getTimeInMillis();
-            Log.d("DIFF", after-before+"");
+//            Log.d("DIFF", after-before+"");
             try {
                 arrayBlockingQueue.put(buffer);
             } catch (InterruptedException e) {
