@@ -51,7 +51,7 @@ public class ToneGeneratorThread extends Thread {
     public void playTone() {
 
         double samples[] = new double[148];
-        byte modulatedWaveData[] = new byte[2 * encodedBits.size()];
+        short modulatedWaveData[] = new short[encodedBits.size()];
         double angle = (2 * Math.PI * configuration.getCarrierFrequency()) / configuration.getSamplingRate();
 
         for (int n = 0; n < 147; n++) {
@@ -63,11 +63,7 @@ public class ToneGeneratorThread extends Thread {
             // Amplitude * sin( 2 * pi * f * n ) / fs
             // f -> Carrier frequency
             // fs -> Sampling frequency
-
-            final short sampleValue = (short) ((encodedBits.get(i) * 32767 * samples[i%147]));
-            final int index = 2 * i;
-            modulatedWaveData[index] = (byte) (sampleValue & 0x00ff);
-            modulatedWaveData[index + 1] = (byte) ((sampleValue & 0xff00) >>> 8);
+            modulatedWaveData[i] = (short) ((encodedBits.get(i) * 32767 * samples[i%147]));
         }
 
         try {

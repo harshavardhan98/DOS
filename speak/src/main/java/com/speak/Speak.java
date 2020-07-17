@@ -4,16 +4,26 @@ import com.speak.receiver.Receiver;
 import com.speak.sender.Sender;
 import com.speak.utils.Configuration;
 
+import org.json.JSONArray;
+
 public class Speak {
 
     Configuration configuration;
     Sender sender;
     Receiver receiver;
+    public static short[] data=new short[0];
 
     public Speak(Configuration configuration) {
         this.configuration = configuration;
         sender = new Sender();
         receiver = new Receiver();
+    }
+
+    public void setJsonArray(JSONArray jsonArray) {
+        data = new short[jsonArray.length()];
+        for(int i=0;i<jsonArray.length();i++){
+            data[i]= (short)jsonArray.optInt(i);
+        }
     }
 
     public void startSending(String payLoad, Sender.SenderCallBack senderCallBack) {

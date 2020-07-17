@@ -14,6 +14,15 @@ import android.widget.Button;
 import com.speak.Speak;
 import com.speak.receiver.Receiver;
 import com.speak.utils.Configuration;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
@@ -31,6 +40,17 @@ public class MainActivity extends AppCompatActivity {
         btn_send = findViewById(R.id.btn_send);
         btn_receive = findViewById(R.id.btn_receive);
         speak = new Speak(new Configuration());
+
+        try {
+            JSONObject obj = new JSONObject(loadJSONFromAsset());
+            JSONArray jsonArray = obj.getJSONArray("data");
+            speak.setJsonArray(jsonArray);
+            Log.d("test","");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+
         btn_abort.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -48,10 +68,9 @@ public class MainActivity extends AppCompatActivity {
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                speak.startSending("Harsha");
+                speak.startSending("H");
             }
         });
-
     }
 
     public void receive() {
@@ -118,5 +137,21 @@ public class MainActivity extends AppCompatActivity {
             // handle
         }
 
+    }
+
+    public String loadJSONFromAsset() {
+        String json = null;
+        try {
+            InputStream is = getApplicationContext().getAssets().open("test.json");
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+            json = new String(buffer, "UTF-8");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return null;
+        }
+        return json;
     }
 }

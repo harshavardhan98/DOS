@@ -1,8 +1,20 @@
 package com.speak.receiver;
 
 import android.os.Handler;
+import android.util.JsonReader;
 import android.util.Log;
+
+import com.speak.Speak;
 import com.speak.utils.Configuration;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.simple.parser.JSONParser;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,6 +44,11 @@ public class DataProcessorThread extends Thread{
     String finalBinaryData;
     String finalData;
     Integer prbsSequenceIndex;
+    JSONArray jsonArray;
+
+    public void setJsonArray(JSONArray jsonArray) {
+        this.jsonArray = jsonArray;
+    }
 
     public DataProcessorThread(
             Configuration configuration,
@@ -68,12 +85,15 @@ public class DataProcessorThread extends Thread{
         Arrays.fill(lpfPrefix,0.0);
         Arrays.fill(hpfPrefix,0.0);
         Arrays.fill(processedDataPrefix,-1);
-        while(!this.isInterrupted()){
+        //while(!this.isInterrupted())
+        {
             try {
                 Log.d("data","Waiting for data");
                 Log.d("data","State: "+processState.toString());
-                short[] buff = (short[]) arrayBlockingQueue.take();
-                Log.d("data","Got data");
+                //short[] buff = (short[]) arrayBlockingQueue.take();
+                short[] buff = new short[0];
+                buff = Speak.data;
+                Log.d("data","Got data "+buff[0]);
                 // TODO Process data here
                 Integer[] processedData = receiverUtils.removeSine(buff, prefix,hpfPrefix,lpfPrefix);
 
@@ -90,6 +110,8 @@ public class DataProcessorThread extends Thread{
                                 if(retrieveData(new Integer[]{})){
                                     abort();
                                 }
+                                Log.d("data",finalBinaryData);
+                                Log.d("data",finalData);
                             }
                             break;
                         }
@@ -121,7 +143,7 @@ public class DataProcessorThread extends Thread{
 
                 }
 
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 this.interrupt();
             }
@@ -233,4 +255,6 @@ public class DataProcessorThread extends Thread{
         }
         return false;
     }
+
+
 }
