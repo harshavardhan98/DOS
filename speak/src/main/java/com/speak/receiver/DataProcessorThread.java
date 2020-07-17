@@ -76,78 +76,164 @@ public class DataProcessorThread extends Thread{
 
     @Override
     public void run() {
-        Double[] prefix = new Double[configuration.getSamplesPerCodeBit()];
-        Double[] lpfPrefix = new Double[configuration.getSamplesPerCodeBit()];
-        Double[] hpfPrefix = new Double[configuration.getSamplesPerCodeBit()];
+        Double[] prefix1 = new Double[configuration.getSamplesPerCodeBit()];
+        Double[] lpfPrefix1 = new Double[configuration.getSamplesPerCodeBit()];
+        Double[] hpfPrefix1 = new Double[configuration.getSamplesPerCodeBit()];
+        Double[] prefix2 = new Double[configuration.getSamplesPerCodeBit()];
+        Double[] lpfPrefix2 = new Double[configuration.getSamplesPerCodeBit()];
+        Double[] hpfPrefix2 = new Double[configuration.getSamplesPerCodeBit()];
         Integer[] processedDataPrefix = new Integer[5 * configuration.getSamplesPerCodeBit()];
         Integer[] blockPrefix = new Integer[0];
-        Arrays.fill(prefix,0.0);
-        Arrays.fill(lpfPrefix,0.0);
-        Arrays.fill(hpfPrefix,0.0);
+        Arrays.fill(prefix1,0.0);
+        Arrays.fill(lpfPrefix1,0.0);
+        Arrays.fill(hpfPrefix1,0.0);
+        Arrays.fill(prefix2,0.0);
+        Arrays.fill(lpfPrefix2,0.0);
+        Arrays.fill(hpfPrefix2,0.0);
         Arrays.fill(processedDataPrefix,-1);
-        //while(!this.isInterrupted())
-        {
-            try {
-                Log.d("data","Waiting for data");
-                Log.d("data","State: "+processState.toString());
-                //short[] buff = (short[]) arrayBlockingQueue.take();
-                short[] buff = new short[0];
-                buff = Speak.data;
-                Log.d("data","Got data "+buff[0]);
-                // TODO Process data here
-                Integer[] processedData = receiverUtils.removeSine(buff, prefix,hpfPrefix,lpfPrefix);
 
-
-                if(processState==ProcessState.initialCarrierSync){
-                    processedData = combineArrays(processedDataPrefix, processedData);
-                    for(int i=0; i<processedData.length - 5 * configuration.getSamplesPerCodeBit(); i++){
-                        if(checkIfPreamble(i,processedData)) {
-                            HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
-                                                                                                (dataStartIndex+configuration.getSamplesPerCodeBit()*4),
-                                                                                                blockPrefix);
-                            blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
-                            if(checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY))){
-                                if(retrieveData(new Integer[]{})){
-                                    abort();
-                                }
-                                Log.d("data",finalBinaryData);
-                                Log.d("data",finalData);
-                            }
-                            break;
-                        }
+//        while(!this.isInterrupted())
+        short[] testBuffer = Speak.data;
+        Integer[] processedData = receiverUtils.removeSine(testBuffer, prefix1,hpfPrefix1,lpfPrefix1);
+        processedData = combineArrays(processedDataPrefix, processedData);
+        for(int i=0; i<processedData.length - 5 * configuration.getSamplesPerCodeBit(); i++){
+            if(checkIfPreamble(i,processedData)) {
+                HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
+                        (dataStartIndex+configuration.getSamplesPerCodeBit()*4),
+                        blockPrefix);
+                blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
+                if(checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY))){
+                    if(retrieveData(new Integer[]{})){
+                        abort();
                     }
-                    for(int i =0; i<processedDataPrefix.length; i++){
-                        processedDataPrefix[i] = processedData[processedData.length - processedDataPrefix.length + i];
-                    }
+                    Log.d("data",finalBinaryData);
+                    Log.d("data",finalData);
                 }
-                else if(processState == ProcessState.CodeSync){
-                    HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
-                                                  0,
-                                                            blockPrefix);
-
-                    blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
-                    if(checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY))){
-                        if(retrieveData(new Integer[]{})){
-                            abort();
-                        }
-                    }
-                }else if(processState == ProcessState.DataRecovery){
-                    HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
-                            (dataStartIndex+configuration.getSamplesPerCodeBit()*4)%processedData.length,
-                            blockPrefix);
-
-                    blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
-                    if(retrieveData(data.get(ReceiverUtils.BLOCKS_KEY))){
-                            abort();
-                    }
-
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                this.interrupt();
+                break;
             }
         }
+
+        ArrayList<Integer> testData = new ArrayList<>();
+        testData.addAll(blocks);
+        blocks = new ArrayList<>();
+        blocks.add(-1);
+        blockPrefix = new Integer[0];
+
+
+
+
+        for(int k=0;k<3;k++){
+            short[] testBuffer2 = new short[Speak.data.length/3];
+
+            for(int j=0;j<testBuffer2.length;j++)
+                testBuffer2[j] = testBuffer[k*testBuffer2.length+j];
+
+            Integer[] processedData2 = receiverUtils.removeSine(testBuffer2, prefix2,hpfPrefix2,lpfPrefix2);
+            if(k==0){
+                for(int i=0; i<processedData2.length - 5 * configuration.getSamplesPerCodeBit(); i++){
+                    if(checkIfPreamble(i,processedData2)) {
+                        processedData2 = combineArrays(processedDataPrefix, processedData2);
+                        HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData2,
+                                (dataStartIndex+configuration.getSamplesPerCodeBit()*4),
+                                blockPrefix);
+                        blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
+                        checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY));
+                        break;
+                    }
+                }
+            }else{
+                HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData2,
+                        (dataStartIndex+configuration.getSamplesPerCodeBit()*4),
+                        blockPrefix);
+                blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
+                checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY));
+            }
+
+            for(int i =0; i<processedDataPrefix.length; i++){
+                processedDataPrefix[i] = processedData2[processedData2.length - processedDataPrefix.length + i];
+            }
+        }
+
+        for(int i=0;i<blocks.size();i++){
+            int var = testData.get(i);
+            testData.set(i,var-blocks.get(i));
+        }
+
+        Log.d("dfsd","testing");
+        Log.d("dfsd","testing");
+        Log.d("dfsd","testing");
+
+
+
+//        short[] testBuffer = Speak.data;
+//        for(int k=0;k<3;k++)
+//        {
+//            try {
+//                Log.d("data","Waiting for data");
+//                Log.d("data","State: "+processState.toString());
+//                //short[] buff = (short[]) arrayBlockingQueue.take();
+//                short[] buff = new short[testBuffer.length/3];
+//                for(int j=0;j<buff.length;j++){
+//                    buff[j] = testBuffer[(k*testBuffer.length/3)+j];
+//                }
+//
+//
+//                Log.d("data","Got data "+buff[0]);
+//                // TODO Process data here
+//                Integer[] processedData = receiverUtils.removeSine(buff, prefix1,hpfPrefix1,lpfPrefix1);
+//
+//
+//                if(processState==ProcessState.initialCarrierSync){
+//                    processedData = combineArrays(processedDataPrefix, processedData);
+//                    for(int i=0; i<processedData.length - 5 * configuration.getSamplesPerCodeBit(); i++){
+//                        if(checkIfPreamble(i,processedData)) {
+//                            HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
+//                                    (dataStartIndex+configuration.getSamplesPerCodeBit()*4),
+//                                    blockPrefix);
+//                            blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
+//                            if(checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY))){
+//                                if(retrieveData(new Integer[]{})){
+//                                    abort();
+//                                }
+//                                Log.d("data",finalBinaryData);
+//                                Log.d("data",finalData);
+//                            }
+//                            break;
+//                        }
+//                    }
+//                    for(int i =0; i<processedDataPrefix.length; i++){
+//                        processedDataPrefix[i] = processedData[processedData.length - processedDataPrefix.length + i];
+//                    }
+//                }
+//                else if(processState == ProcessState.CodeSync){
+//                    HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
+//                            0,
+//                            blockPrefix);
+//
+//                    blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
+//                    if(checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY))){
+//                        if(retrieveData(new Integer[]{})){
+//                            abort();
+//                        }
+//                    }
+//                }else if(processState == ProcessState.DataRecovery){
+//                    HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
+//                            (dataStartIndex+configuration.getSamplesPerCodeBit()*4)%processedData.length,
+//                            blockPrefix);
+//
+//                    blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
+//                    if(retrieveData(data.get(ReceiverUtils.BLOCKS_KEY))){
+//                        abort();
+//                    }
+//
+//                }
+//
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                this.interrupt();
+//            }
+//        }
+
     }
 
     public void abort(){
@@ -199,25 +285,25 @@ public class DataProcessorThread extends Thread{
         int index = blocks.size();
         blocks.addAll(Arrays.asList(data));
 
-        for(int i=index;i<blocks.size();i++){
-            blocks.set(i,blocks.get(i-1)*blocks.get(i));
-        }
+//        for(int i=index;i<blocks.size();i++){
+//            blocks.set(i,blocks.get(i-1)*blocks.get(i));
+//        }
 
-        while(blocks.size()>=prbsSequence.size()){
-            int sum=0;
-            for(int i=0;i<prbsSequence.size();i++){
-                sum+= (2*Integer.parseInt(prbsSequence.get(i))-1)*blocks.get(i);
-            }
-            Log.d("SUM",sum+" ");
-            if(sum>0.7*prbsSequence.size()){
-                for(int j=0;j<prbsSequence.size();j++){
-                    blocks.remove(0);
-                }
-                processState = ProcessState.DataRecovery;
-                return true;
-            }
-            blocks.remove(0);
-        }
+//        while(blocks.size()>=prbsSequence.size()){
+//            int sum=0;
+//            for(int i=0;i<prbsSequence.size();i++){
+//                sum+= (2*Integer.parseInt(prbsSequence.get(i))-1)*blocks.get(i);
+//            }
+//            Log.d("SUM",sum+" ");
+//            if(sum>0.7*prbsSequence.size()){
+//                for(int j=0;j<prbsSequence.size();j++){
+//                    blocks.remove(0);
+//                }
+//                processState = ProcessState.DataRecovery;
+//                return true;
+//            }
+//            blocks.remove(0);
+//        }
 
         return false;
     }
@@ -228,6 +314,10 @@ public class DataProcessorThread extends Thread{
         int index = blocks.size();
         blocks.addAll(Arrays.asList(data));
 
+        for(int i=index;i<blocks.size();i++){
+            blocks.set(i,blocks.get(i-1)*blocks.get(i));
+        }
+
         while(blocks.size()>=configuration.getSpreadingFactor()){
             int sum=0;
             for(int j=0;j<configuration.getSpreadingFactor();j++){
@@ -237,7 +327,7 @@ public class DataProcessorThread extends Thread{
                 sum+=val;
             }
 
-            finalBinaryData +=(sum/60.0>0)?"1":"0";
+            finalBinaryData +=(sum/((double)configuration.getSpreadingFactor())>0)?"1":"0";
             if(checkFinalData()) return true;
         }
 

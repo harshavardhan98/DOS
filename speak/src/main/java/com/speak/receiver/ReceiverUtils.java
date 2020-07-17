@@ -37,6 +37,14 @@ public class ReceiverUtils {
         return polarizeData(processedData);
     }
 
+    public Double[] removeSine2(short[] transmittedData, Double[] prefix,Double[] hpfPrefix,Double[] lpfPrefix){
+        Double[] processedData = highPassFilter(transmittedData, hpfCoefficients,hpfPrefix);
+        processedData = multiplySine(processedData, prefix);
+        processedData = lowPassFilter(processedData, lpfCoefficients,lpfPrefix);
+//        return polarizeData(processedData);
+        return processedData;
+    }
+
     public Double[] multiplySine(Double[] highPassFilterResult, Double[] prefix){
         final int dataSize = highPassFilterResult.length;
         Double[] processedData = new Double[dataSize];
