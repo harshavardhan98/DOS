@@ -237,7 +237,7 @@ public class DataProcessorThread extends Thread{
                 sum+=val;
             }
 
-            finalBinaryData +=(sum/60>0)?"1":"0";
+            finalBinaryData +=(sum/60.0>0)?"1":"0";
             if(checkFinalData()) return true;
         }
 

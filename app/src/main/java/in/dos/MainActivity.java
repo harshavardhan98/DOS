@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                speak.startSending("H");
+                speak.startSending("Ha");
             }
         });
     }
@@ -142,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
     public String loadJSONFromAsset() {
         String json = null;
         try {
-            InputStream is = getApplicationContext().getAssets().open("test.json");
+            InputStream is = getApplicationContext().getAssets().open("test2.json");
             int size = is.available();
             byte[] buffer = new byte[size];
             is.read(buffer);
