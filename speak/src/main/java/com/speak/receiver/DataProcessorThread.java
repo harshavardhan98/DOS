@@ -111,8 +111,8 @@ public class DataProcessorThread extends Thread{
                     }
                 }else if(processState == ProcessState.DataRecovery){
                     HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
-                            (dataStartIndex+configuration.getSamplesPerCodeBit()*4)%processedData.length,
-                            blockPrefix);
+                                                        0,
+                                                        blockPrefix);
 
                     blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
                     if(retrieveData(data.get(ReceiverUtils.BLOCKS_KEY))){
@@ -215,7 +215,7 @@ public class DataProcessorThread extends Thread{
                 sum+=val;
             }
 
-            finalBinaryData +=(sum/60>0)?"1":"0";
+            finalBinaryData +=(sum/(double)configuration.getSpreadingFactor() > 0)?"1":"0";
             if(checkFinalData()) return true;
         }
 
