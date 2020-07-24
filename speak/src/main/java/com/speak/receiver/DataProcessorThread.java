@@ -5,6 +5,7 @@ import android.util.Log;
 import com.speak.utils.Configuration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -32,6 +33,8 @@ public class DataProcessorThread extends Thread{
     String finalBinaryData;
     String finalData;
     Integer prbsSequenceIndex;
+    Integer minSum = 0,maxSum=0;
+    ArrayList<Short> exptData = new ArrayList<>();
 
     public DataProcessorThread(
             Configuration configuration,
@@ -73,6 +76,7 @@ public class DataProcessorThread extends Thread{
                 Log.d("data","Waiting for data");
                 Log.d("data","State: "+processState.toString());
                 short[] buff = (short[]) arrayBlockingQueue.take();
+                short[] buff2 = Arrays.copyOf(buff,buff.length);
                 Log.d("data","Got data");
                 // TODO Process data here
                 Integer[] processedData = receiverUtils.removeSine(buff, prefix,hpfPrefix,lpfPrefix);
@@ -82,6 +86,9 @@ public class DataProcessorThread extends Thread{
                     processedData = combineArrays(processedDataPrefix, processedData);
                     for(int i=0; i<processedData.length - 5 * configuration.getSamplesPerCodeBit(); i++){
                         if(checkIfPreamble(i,processedData)) {
+                            for(int m=0;m<buff2.length;m++){
+                                exptData.add(buff2[m]);
+                            }
                             HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
                                                                                                 (dataStartIndex+configuration.getSamplesPerCodeBit()*4),
                                                                                                 blockPrefix);
@@ -99,6 +106,14 @@ public class DataProcessorThread extends Thread{
                     }
                 }
                 else if(processState == ProcessState.CodeSync){
+                    for(int m=0;m<buff2.length;m++){
+                        exptData.add(buff2[m]);
+                    }
+
+                    if(exptData.size()>9*configuration.getSamplingRate()/2){
+                        Log.d("tag","");
+                        Log.d("tag","");
+                    }
                     HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
                                                   0,
                                                             blockPrefix);
@@ -110,6 +125,16 @@ public class DataProcessorThread extends Thread{
                         }
                     }
                 }else if(processState == ProcessState.DataRecovery){
+
+                    for(int m=0;m<buff2.length;m++){
+                        exptData.add(buff2[m]);
+                    }
+
+                    if(exptData.size()>9*configuration.getSamplingRate()/2){
+                        Log.d("tag","");
+                        Log.d("tag","");
+                    }
+
                     HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
                                                         0,
                                                         blockPrefix);
@@ -186,7 +211,12 @@ public class DataProcessorThread extends Thread{
             for(int i=0;i<prbsSequence.size();i++){
                 sum+= (2*Integer.parseInt(prbsSequence.get(i))-1)*blocks.get(i);
             }
-            Log.d("SUM",sum+" ");
+            if(minSum>sum){
+                minSum=sum;
+            }
+            if(sum>maxSum){
+                maxSum = sum;
+            }
             if(sum>0.7*prbsSequence.size()){
                 for(int j=0;j<prbsSequence.size();j++){
                     blocks.remove(0);
