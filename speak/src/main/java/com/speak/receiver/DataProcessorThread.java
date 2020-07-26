@@ -5,7 +5,6 @@ import android.util.Log;
 import com.speak.utils.Configuration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -48,7 +47,7 @@ public class DataProcessorThread extends Thread{
         this.receiverCallBack = receiverCallBack;
         this.handler = handler;
         receiverUtils = new ReceiverUtils(configuration);
-        processState = ProcessState.initialCarrierSync;
+        processState = ProcessState.carrierSync;
         blocks = new ArrayList<>();
         blocks.add(-1);
         dataStartIndex = -1;
@@ -80,7 +79,7 @@ public class DataProcessorThread extends Thread{
                 Integer[] processedData = receiverUtils.removeSine(buff, prefix,hpfPrefix,lpfPrefix);
 
 
-                if(processState==ProcessState.initialCarrierSync){
+                if(processState==ProcessState.carrierSync){
                     processedData = combineArrays(processedDataPrefix, processedData);
                     for(int i=0; i<processedData.length - 5 * configuration.getSamplesPerCodeBit(); i++){
                         if(checkIfPreamble(i,processedData)) {

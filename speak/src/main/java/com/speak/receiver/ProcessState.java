@@ -1,7 +1,7 @@
 package com.speak.receiver;
 
 public enum ProcessState {
-    initialCarrierSync,
+    carrierSync,
     CodeSync,
     DataRecovery
 }
