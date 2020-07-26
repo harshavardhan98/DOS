@@ -21,14 +21,15 @@ public class BitManipulationHelper {
         return a.equals(b) ? (byte) -1 : (byte) 1;
     }
 
-    public ArrayList<String> convertAsciiToBinary(final String input) {
+    public ArrayList<String> convertAsciiToBinary(String input) {
         String bitString = "";
+        input +=configuration.getTerminalChar();
         byte[] inputBytes = input.getBytes();
 
         for (byte i : inputBytes) {
             bitString += String.format("%8s", Integer.toBinaryString(i & 0xFF)).replace(' ', '0');
         }
-
+        bitString+="1";
         return new ArrayList<String>(Arrays.asList(bitString.split("(?!^)")));
     }
 
@@ -82,6 +83,8 @@ public class BitManipulationHelper {
 
         // adding preamble before PRBS bits and data bits
         int[] preamble = new int[]{1,0,0,1,1,0};
+
+
         for (int i=0; i<preamble.length; i++){
             for (int j=0; j<configuration.getSamplesPerCodeBit(); j++){
                 encodedBits.add((byte) (2*preamble[i]-1));
@@ -111,8 +114,10 @@ public class BitManipulationHelper {
 
         ArrayList<Byte> encodedBits = new ArrayList<>();
         addPreamble(encodedBits,pseudoRandomSequence);
+
         for (int i = 0; i < dataBitsLength; i++) {
             encodedBits.add(polarisedXor(interpolatedDataBits.get(i), interpolatedCodeBits.get(i % codeBitsLength)));
+//            encodedBits.add(polarisedXor((byte)0, interpolatedCodeBits.get(i % codeBitsLength)));
             // xored output is polarised ( 0's will be replaced by -1)
         }
         // 423360+0.2*44100+127*147 -> 4,50,849

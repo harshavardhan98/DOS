@@ -1,22 +1,11 @@
 package com.speak.receiver;
 
 import android.os.Handler;
-import android.util.JsonReader;
 import android.util.Log;
-
-import com.speak.Speak;
 import com.speak.utils.Configuration;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.json.simple.parser.JSONParser;
-
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -44,11 +33,8 @@ public class DataProcessorThread extends Thread{
     String finalBinaryData;
     String finalData;
     Integer prbsSequenceIndex;
-    JSONArray jsonArray;
-
-    public void setJsonArray(JSONArray jsonArray) {
-        this.jsonArray = jsonArray;
-    }
+    Integer peakPolarity;
+    ArrayList<Short> exptData = new ArrayList<>();
 
     public DataProcessorThread(
             Configuration configuration,
@@ -85,15 +71,11 @@ public class DataProcessorThread extends Thread{
         Arrays.fill(lpfPrefix,0.0);
         Arrays.fill(hpfPrefix,0.0);
         Arrays.fill(processedDataPrefix,-1);
-        //while(!this.isInterrupted())
-        {
+        while(!this.isInterrupted()){
             try {
-                Log.d("data","Waiting for data");
-                Log.d("data","State: "+processState.toString());
-                //short[] buff = (short[]) arrayBlockingQueue.take();
-                short[] buff = new short[0];
-                buff = Speak.data;
-                Log.d("data","Got data "+buff[0]);
+                Log.d("state","State: "+processState.toString());
+                short[] buff = (short[]) arrayBlockingQueue.take();
+                short[] buff2 = Arrays.copyOf(buff,buff.length);
                 // TODO Process data here
                 Integer[] processedData = receiverUtils.removeSine(buff, prefix,hpfPrefix,lpfPrefix);
 
@@ -102,16 +84,17 @@ public class DataProcessorThread extends Thread{
                     processedData = combineArrays(processedDataPrefix, processedData);
                     for(int i=0; i<processedData.length - 5 * configuration.getSamplesPerCodeBit(); i++){
                         if(checkIfPreamble(i,processedData)) {
+                            for(int m=0;m<buff2.length;m++){
+                                exptData.add(buff2[m]);
+                            }
                             HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
-                                                                                                (dataStartIndex+configuration.getSamplesPerCodeBit()*4),
+                                                                                                dataStartIndex,
                                                                                                 blockPrefix);
                             blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
                             if(checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY))){
                                 if(retrieveData(new Integer[]{})){
                                     abort();
                                 }
-                                Log.d("data",finalBinaryData);
-                                Log.d("data",finalData);
                             }
                             break;
                         }
@@ -121,6 +104,14 @@ public class DataProcessorThread extends Thread{
                     }
                 }
                 else if(processState == ProcessState.CodeSync){
+                    for(int m=0;m<buff2.length;m++){
+                        exptData.add(buff2[m]);
+                    }
+
+                    if(exptData.size()>9*configuration.getSamplingRate()/2){
+                        Log.d("tag","");
+                        Log.d("tag","");
+                    }
                     HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
                                                   0,
                                                             blockPrefix);
@@ -132,9 +123,19 @@ public class DataProcessorThread extends Thread{
                         }
                     }
                 }else if(processState == ProcessState.DataRecovery){
+
+                    for(int m=0;m<buff2.length;m++){
+                        exptData.add(buff2[m]);
+                    }
+
+                    if(exptData.size()>9*configuration.getSamplingRate()/2){
+                        Log.d("tag","");
+                        Log.d("tag","");
+                    }
+
                     HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
-                            (dataStartIndex+configuration.getSamplesPerCodeBit()*4)%processedData.length,
-                            blockPrefix);
+                                                        0,
+                                                        blockPrefix);
 
                     blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
                     if(retrieveData(data.get(ReceiverUtils.BLOCKS_KEY))){
@@ -143,7 +144,7 @@ public class DataProcessorThread extends Thread{
 
                 }
 
-            } catch (Exception e) {
+            } catch (InterruptedException e) {
                 e.printStackTrace();
                 this.interrupt();
             }
@@ -208,8 +209,9 @@ public class DataProcessorThread extends Thread{
             for(int i=0;i<prbsSequence.size();i++){
                 sum+= (2*Integer.parseInt(prbsSequence.get(i))-1)*blocks.get(i);
             }
-            Log.d("SUM",sum+" ");
-            if(sum>0.7*prbsSequence.size()){
+
+            if(Math.abs(sum)>0.7*prbsSequence.size()){
+                peakPolarity=(sum>0)?1:0;
                 for(int j=0;j<prbsSequence.size();j++){
                     blocks.remove(0);
                 }
@@ -231,13 +233,13 @@ public class DataProcessorThread extends Thread{
         while(blocks.size()>=configuration.getSpreadingFactor()){
             int sum=0;
             for(int j=0;j<configuration.getSpreadingFactor();j++){
-                int val = blocks.get(0)*(Integer.parseInt(prbsSequence.get(prbsSequenceIndex)));
+                int val = (int) (blocks.get(0)*(2*Integer.parseInt(prbsSequence.get(prbsSequenceIndex))-1)*Math.pow(-1,peakPolarity));
                 prbsSequenceIndex = (prbsSequenceIndex+1)%prbsSequence.size();
                 blocks.remove(0);
                 sum+=val;
             }
 
-            finalBinaryData +=(sum/60.0>0)?"1":"0";
+            finalBinaryData +=(sum/(double)configuration.getSpreadingFactor() > 0)?"1":"0";
             if(checkFinalData()) return true;
         }
 
@@ -250,11 +252,10 @@ public class DataProcessorThread extends Thread{
             String str = new Character((char)charCode).toString();
             finalData +=str;
             if(str=="$") return true;
-            Log.d("data",str);
+            Log.d("bdata",finalBinaryData);
+            Log.d("data",finalData);
             finalBinaryData = "";
         }
         return false;
     }
-
-
 }
