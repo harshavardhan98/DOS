@@ -21,14 +21,15 @@ public class BitManipulationHelper {
         return a.equals(b) ? (byte) -1 : (byte) 1;
     }
 
-    public ArrayList<String> convertAsciiToBinary(final String input) {
+    public ArrayList<String> convertAsciiToBinary(String input) {
         String bitString = "";
+        input +=configuration.getTerminalChar();
         byte[] inputBytes = input.getBytes();
 
         for (byte i : inputBytes) {
             bitString += String.format("%8s", Integer.toBinaryString(i & 0xFF)).replace(' ', '0');
         }
-
+        bitString+="1";
         return new ArrayList<String>(Arrays.asList(bitString.split("(?!^)")));
     }
 

@@ -128,7 +128,7 @@ public class ReceiverUtils {
                     sum+=processedData[i];
                 }
                 startIndex+=configuration.getSamplesPerCodeBit();
-                blockData.add((sum/configuration.getSamplesPerCodeBit() > 0)?1:-1);
+                blockData.add((sum/(double)configuration.getSamplesPerCodeBit() > 0.0)?1:-1);
             }else {
                 for(int i=startIndex; i<processedData.length; i++){
                     newPrefix.add(processedData[i]);

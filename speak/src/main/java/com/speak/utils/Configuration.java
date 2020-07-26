@@ -11,6 +11,7 @@ public class Configuration {
     private Integer carrierFrequency;
     private Integer samplesPerDataBit;
     private Integer samplesPerCodeBit;
+    private String terminalChar;
 
     public Configuration() {
         this.seedValue = "10000011";
@@ -18,7 +19,16 @@ public class Configuration {
         this.bitDuration = 0.2;
         this.spreadingFactor = 60;
         this.carrierFrequency = 18000;
+        this.terminalChar = "$";
         setDependentData();
+    }
+
+    public String getTerminalChar() {
+        return terminalChar;
+    }
+
+    public void setTerminalChar(String terminalChar) {
+        this.terminalChar = terminalChar;
     }
 
     public void setSeedValue(String seedValue) {

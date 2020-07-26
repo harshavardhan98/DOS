@@ -33,7 +33,7 @@ public class DataProcessorThread extends Thread{
     String finalBinaryData;
     String finalData;
     Integer prbsSequenceIndex;
-    Integer minSum = 0,maxSum=0;
+    Integer peakPolarity;
     ArrayList<Short> exptData = new ArrayList<>();
 
     public DataProcessorThread(
@@ -73,11 +73,9 @@ public class DataProcessorThread extends Thread{
         Arrays.fill(processedDataPrefix,-1);
         while(!this.isInterrupted()){
             try {
-                Log.d("data","Waiting for data");
-                Log.d("data","State: "+processState.toString());
+                Log.d("state","State: "+processState.toString());
                 short[] buff = (short[]) arrayBlockingQueue.take();
                 short[] buff2 = Arrays.copyOf(buff,buff.length);
-                Log.d("data","Got data");
                 // TODO Process data here
                 Integer[] processedData = receiverUtils.removeSine(buff, prefix,hpfPrefix,lpfPrefix);
 
@@ -90,7 +88,7 @@ public class DataProcessorThread extends Thread{
                                 exptData.add(buff2[m]);
                             }
                             HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
-                                                                                                (dataStartIndex+configuration.getSamplesPerCodeBit()*4),
+                                                                                                dataStartIndex,
                                                                                                 blockPrefix);
                             blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
                             if(checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY))){
@@ -211,13 +209,9 @@ public class DataProcessorThread extends Thread{
             for(int i=0;i<prbsSequence.size();i++){
                 sum+= (2*Integer.parseInt(prbsSequence.get(i))-1)*blocks.get(i);
             }
-            if(minSum>sum){
-                minSum=sum;
-            }
-            if(sum>maxSum){
-                maxSum = sum;
-            }
-            if(sum>0.7*prbsSequence.size()){
+
+            if(Math.abs(sum)>0.7*prbsSequence.size()){
+                peakPolarity=(sum>0)?1:0;
                 for(int j=0;j<prbsSequence.size();j++){
                     blocks.remove(0);
                 }
@@ -239,7 +233,7 @@ public class DataProcessorThread extends Thread{
         while(blocks.size()>=configuration.getSpreadingFactor()){
             int sum=0;
             for(int j=0;j<configuration.getSpreadingFactor();j++){
-                int val = blocks.get(0)*(Integer.parseInt(prbsSequence.get(prbsSequenceIndex)));
+                int val = (int) (blocks.get(0)*(2*Integer.parseInt(prbsSequence.get(prbsSequenceIndex))-1)*Math.pow(-1,peakPolarity));
                 prbsSequenceIndex = (prbsSequenceIndex+1)%prbsSequence.size();
                 blocks.remove(0);
                 sum+=val;
@@ -258,7 +252,8 @@ public class DataProcessorThread extends Thread{
             String str = new Character((char)charCode).toString();
             finalData +=str;
             if(str=="$") return true;
-            Log.d("data",str);
+            Log.d("bdata",finalBinaryData);
+            Log.d("data",finalData);
             finalBinaryData = "";
         }
         return false;
