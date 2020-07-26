@@ -38,6 +38,10 @@ public class DataProcessorThread extends Thread{
     String finalData;
     Integer prbsSequenceIndex;
     JSONArray jsonArray;
+    Integer minSum=0,maxSum=0;
+    int sign=1;
+    ArrayList<Integer> blockSum = new ArrayList<>();
+
 
     public void setJsonArray(JSONArray jsonArray) {
         this.jsonArray = jsonArray;
@@ -187,17 +191,14 @@ public class DataProcessorThread extends Thread{
 
 
 
+
         short[] testBuffer = Speak.data;
-        for(int k=0;k<3;k++)
         {
             try {
                 Log.d("data","Waiting for data");
                 Log.d("data","State: "+processState.toString());
                 //short[] buff = (short[]) arrayBlockingQueue.take();
-                short[] buff = new short[testBuffer.length/3];
-                for(int j=0;j<buff.length;j++){
-                    buff[j] = testBuffer[(k*testBuffer.length/3)+j];
-                }
+                short[] buff = testBuffer;
 
 
                 Log.d("data","Got data "+buff[0]);
@@ -209,8 +210,11 @@ public class DataProcessorThread extends Thread{
                     processedData = combineArrays(processedDataPrefix, processedData);
                     for(int i=0; i<processedData.length - 5 * configuration.getSamplesPerCodeBit(); i++){
                         if(checkIfPreamble(i,processedData)) {
+//                            HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
+//                                    (dataStartIndex+configuration.getSamplesPerCodeBit()*4),
+//                                    blockPrefix);
                             HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
-                                    (dataStartIndex+configuration.getSamplesPerCodeBit()*4),
+                                    (dataStartIndex),
                                     blockPrefix);
                             blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
                             if(checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY))){
@@ -266,6 +270,7 @@ public class DataProcessorThread extends Thread{
         int power1, power2;
         power1 = getSubArraySum(startIndex,startIndex+configuration.getSamplesPerCodeBit()-1, processedData)
                 - getSubArraySum(startIndex+configuration.getSamplesPerCodeBit(), startIndex+ 2*configuration.getSamplesPerCodeBit()-1, processedData);
+        blockSum.add(power1);
         if (power1>=200){
             int maxIndex= startIndex,maxPower=power1;
             for(int i=1;i<=configuration.getSamplesPerCodeBit();i++){
@@ -316,8 +321,19 @@ public class DataProcessorThread extends Thread{
             for(int i=0;i<prbsSequence.size();i++){
                 sum+= (2*Integer.parseInt(prbsSequence.get(i))-1)*blocks.get(i);
             }
-            Log.d("SUM",sum+" ");
-            if(sum>0.7*prbsSequence.size()){
+
+            if(sum<minSum){
+                minSum = sum;
+            }
+            if(sum>maxSum){
+                maxSum = sum;
+            }
+
+            if(Math.abs(sum)>0.7*prbsSequence.size()){
+                if(sum>0){
+                    sign=1;
+                }else
+                    sign=0;
                 for(int j=0;j<prbsSequence.size();j++){
                     blocks.remove(0);
                 }
@@ -343,7 +359,7 @@ public class DataProcessorThread extends Thread{
         while(blocks.size()>=configuration.getSpreadingFactor()){
             int sum=0;
             for(int j=0;j<configuration.getSpreadingFactor();j++){
-                int val = blocks.get(0)*(Integer.parseInt(prbsSequence.get(prbsSequenceIndex)));
+                int val = (int) (blocks.get(0)*(2*Integer.parseInt(prbsSequence.get(prbsSequenceIndex))-1)*Math.pow(-1,sign));
                 prbsSequenceIndex = (prbsSequenceIndex+1)%prbsSequence.size();
                 blocks.remove(0);
                 sum+=val;

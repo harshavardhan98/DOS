@@ -1,5 +1,7 @@
 package com.speak.receiver;
 
+import android.util.Log;
+
 import com.speak.utils.Configuration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,13 +39,6 @@ public class ReceiverUtils {
         return polarizeData(processedData);
     }
 
-    public Double[] removeSine2(short[] transmittedData, Double[] prefix,Double[] hpfPrefix,Double[] lpfPrefix){
-        Double[] processedData = highPassFilter(transmittedData, hpfCoefficients,hpfPrefix);
-        processedData = multiplySine(processedData, prefix);
-        processedData = lowPassFilter(processedData, lpfCoefficients,lpfPrefix);
-//        return polarizeData(processedData);
-        return processedData;
-    }
 
     public Double[] multiplySine(Double[] highPassFilterResult, Double[] prefix){
         final int dataSize = highPassFilterResult.length;
@@ -97,11 +92,15 @@ public class ReceiverUtils {
                 if(i-j<0){
                     processedData[i] = processedData[i]+filterCoefficients[j] * hpfPrefix[hpfPrefix.length+(i-j)];
                 }else{
-                    processedData[i] = processedData[i]+filterCoefficients[j] * transmittedData[i-j];
+                    processedData[i] = processedData[i]+filterCoefficients[j] * (transmittedData[i-j]);
                 }
             }
+        }
+        Log.d("tag","");
+        for(int i=0;i<m;i++){
             processedData[i] = transmittedData[i] - processedData[i];
         }
+        Log.d("tag","");
 
         for(int i =0; i<hpfPrefix.length; i++){
             hpfPrefix[i] = (double) transmittedData[transmittedData.length-hpfPrefix.length+i];
@@ -136,7 +135,7 @@ public class ReceiverUtils {
                     sum+=processedData[i];
                 }
                 startIndex+=configuration.getSamplesPerCodeBit();
-                blockData.add((sum/configuration.getSamplesPerCodeBit() > 0)?1:-1);
+                blockData.add((sum/(double)configuration.getSamplesPerCodeBit() > 0.0)?1:-1);
             }else {
                 for(int i=startIndex; i<processedData.length; i++){
                     newPrefix.add(processedData[i]);

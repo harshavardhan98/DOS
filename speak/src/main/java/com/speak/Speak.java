@@ -22,7 +22,7 @@ public class Speak {
     public void setJsonArray(JSONArray jsonArray) {
         data = new short[jsonArray.length()];
         for(int i=0;i<jsonArray.length();i++){
-            data[i]= (short)jsonArray.optInt(i);
+            data[i]= (short) jsonArray.optInt(i);
         }
     }
 
