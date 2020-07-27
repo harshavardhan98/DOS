@@ -192,17 +192,18 @@ public class DataProcessorThread extends Thread{
 
 
 
-        short[] testBuffer = Speak.data;
-        for(int k=0;k<3;k++)
+//        short[] testBuffer = Speak.data;
+//        for(int k=0;k<27;k++)
+        while(!this.isInterrupted())
         {
             try {
                 Log.d("data","Waiting for data");
                 Log.d("data","State: "+processState.toString());
-                //short[] buff = (short[]) arrayBlockingQueue.take();
-                short[] buff = new short[testBuffer.length/3];
-                for(int j=0;j<buff.length;j++){
-                    buff[j] = testBuffer[(k*testBuffer.length/3)+j];
-                }
+                short[] buff = (short[]) arrayBlockingQueue.take();
+//                short[] buff = new short[testBuffer.length/27];
+//                for(int j=0;j<buff.length;j++){
+//                    buff[j] = testBuffer[(k*testBuffer.length/27)+j];
+//                }
 
 
                 Log.d("data","Got data "+buff[0]);
