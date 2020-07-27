@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                speak.startSending("Ha");
+                speak.startSending("Sujin");
             }
         });
     }

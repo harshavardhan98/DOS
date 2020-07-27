@@ -229,6 +229,10 @@ public class DataProcessorThread extends Thread{
         int index = blocks.size();
         blocks.addAll(Arrays.asList(data));
 
+        for(int i=index;i<blocks.size();i++){
+            blocks.set(i,blocks.get(i-1)*blocks.get(i));
+        }
+
         while(blocks.size()>=configuration.getSpreadingFactor()){
             int sum=0;
             for(int j=0;j<configuration.getSpreadingFactor();j++){
@@ -250,7 +254,7 @@ public class DataProcessorThread extends Thread{
             int charCode = Integer.parseInt(finalBinaryData, 2);
             String str = new Character((char)charCode).toString();
             finalData +=str;
-            if(str=="$") return true;
+            if(str.equals("$")) return true;
             Log.d("bdata",finalBinaryData);
             Log.d("data",finalData);
             finalBinaryData = "";
