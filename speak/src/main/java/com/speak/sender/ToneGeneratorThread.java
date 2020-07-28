@@ -35,10 +35,6 @@ public class ToneGeneratorThread extends Thread {
         audioTrack.play();
 
         playTone();
-//        for (int startIndex = 0; startIndex * configuration.getSamplesPerDataBit()< encodedBits.size() && !this.isInterrupted(); startIndex++) {
-//            playTone(startIndex * configuration.getSamplesPerDataBit());
-//            Log.d("ToneGen", "play tone called");
-//        }
 
         audioTrack.release();
         audioTrack = null;
@@ -61,13 +57,10 @@ public class ToneGeneratorThread extends Thread {
 
 
         for (int i = 0; i < encodedBits.size(); i++) {
-
-            // Amplitude * sin( 2 * pi * f * n ) / fs
-            // f -> Carrier frequency
-            // fs -> Sampling frequency
-//            modulatedWaveData[i+22050] = (short) ((encodedBits.get(i) * 32767 * samples[i%147]));
+                // Amplitude * sin( 2 * pi * f * n ) / fs
+                // f -> Carrier frequency
+                // fs -> Sampling frequency
                modulatedWaveData[i] = (short) ((encodedBits.get(i) * 32767 * samples[i%147]));
-//            modulatedWaveData[i] = (short) ((32767 * samples[i%147]));
         }
 
         try {

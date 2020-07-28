@@ -23,12 +23,14 @@ public class BitManipulationHelper {
 
     public ArrayList<String> convertAsciiToBinary(String input) {
         String bitString = "";
+        // Terminal character added to detect end of transmitted data in receiver side
         input +=configuration.getTerminalChar();
         byte[] inputBytes = input.getBytes();
 
         for (byte i : inputBytes) {
             bitString += String.format("%8s", Integer.toBinaryString(i & 0xFF)).replace(' ', '0');
         }
+        // Extra padding to avoid data loss
         bitString+="1";
         return new ArrayList<String>(Arrays.asList(bitString.split("(?!^)")));
     }
@@ -37,7 +39,6 @@ public class BitManipulationHelper {
         String seed = configuration.getSeedValue();
         String pseudoRandomSequence = "";
         List<String> seedArray = new ArrayList<>(Arrays.asList(seed.split("(?!^)")));
-        // todo: Check for Integer overflow
         int size = (int) (Math.pow(2, seed.length()-1) - 1);
 
         for (int i = 0; i < size; i++) {
@@ -50,53 +51,30 @@ public class BitManipulationHelper {
         return new ArrayList<String>(Arrays.asList(pseudoRandomSequence.split("(?!^)")));
     }
 
-    public ArrayList<Byte> interpolateDataBits(ArrayList<String> bitString) {
 
+    public ArrayList<Byte> interpolateBits(ArrayList<String> bitString, Integer interpolationSize) {
         ArrayList<Byte> interpolatedData = new ArrayList<>();
-        // todo : Check whether we can apply ceil to interpolationRate
-
         for (int i = 0; i < bitString.size(); i++) {
             Byte interpolatedByte = Byte.parseByte(bitString.get(i));
-            for (int j = 0; j < configuration.getSamplesPerDataBit(); j++) {
+            for (int j = 0; j < interpolationSize; j++) {
                 interpolatedData.add(interpolatedByte);
             }
         }
-
         return interpolatedData;
     }
 
-    public ArrayList<Byte> interpolateCodeBits(ArrayList<String> pseudoRandomSequence) {
-
-        ArrayList<Byte> interpolatedCode = new ArrayList<>();
-
-        for (int i = 0; i < pseudoRandomSequence.size(); i++) {
-            Byte interpolatedByte = Byte.parseByte(pseudoRandomSequence.get(i));
-            for (int j = 0; j < configuration.getSamplesPerCodeBit(); j++) {
-                interpolatedCode.add(interpolatedByte);
-            }
-        }
-
-        return interpolatedCode;
-    }
 
     public void addPreamble(ArrayList<Byte> encodedBits,ArrayList<String> pseudoRandomSequence){
-
-        // adding preamble before PRBS bits and data bits
         int[] preamble = new int[]{1,0,0,1,1,0};
 
-
+        // adding the preamble
         for (int i=0; i<preamble.length; i++){
             for (int j=0; j<configuration.getSamplesPerCodeBit(); j++){
                 encodedBits.add((byte) (2*preamble[i]-1));
             }
         }
 
-        //todo Ask Kamal if this would be necessary
-//        // adding -1 bits for 200ms to sync receiver even during receiver delays
-//        for(int i=0;i<configuration.getSamplingRate()*0.2;i++){
-//            encodedBits.add((byte)-1);
-//        }
-
+        // adding the prbs sequence
         for(int i=0;i<pseudoRandomSequence.size();i++){
             byte sampleBit = pseudoRandomSequence.get(i).equals("0")?(byte)-1:(byte)1;
             for(int j=0;j<configuration.getSamplesPerCodeBit();j++){
@@ -108,19 +86,17 @@ public class BitManipulationHelper {
     public ArrayList<Byte> encodeBits(ArrayList<Byte> interpolatedCodeBits,
                                       ArrayList<Byte> interpolatedDataBits,
                                       ArrayList<String> pseudoRandomSequence) {
-
         final int dataBitsLength = interpolatedDataBits.size();
         final int codeBitsLength = interpolatedCodeBits.size();
 
         ArrayList<Byte> encodedBits = new ArrayList<>();
         addPreamble(encodedBits,pseudoRandomSequence);
 
+        // Encoding the data by xoring the data and prbs code bits
         for (int i = 0; i < dataBitsLength; i++) {
             encodedBits.add(polarisedXor(interpolatedDataBits.get(i), interpolatedCodeBits.get(i % codeBitsLength)));
-//            encodedBits.add(polarisedXor((byte)0, interpolatedCodeBits.get(i % codeBitsLength)));
             // xored output is polarised ( 0's will be replaced by -1)
         }
-        // 423360+0.2*44100+127*147 -> 4,50,849
         return encodedBits;
     }
 }

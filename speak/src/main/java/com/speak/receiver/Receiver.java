@@ -3,25 +3,12 @@ package com.speak.receiver;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Log;
-
 import androidx.annotation.NonNull;
-
 import com.speak.utils.BitManipulationHelper;
 import com.speak.utils.Configuration;
-
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 
-/*
- 1. Filter define
- 2. RSSI -> not available yet
- 3. SineRemoval
- 4. Low Pass filter & amplify
- 5. Reducing blocks to bits
- 5. Code Sync -> correlation
- 6. Data Recovery
-* */
 
 public class Receiver {
 

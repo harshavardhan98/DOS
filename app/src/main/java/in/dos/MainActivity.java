@@ -11,8 +11,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import com.speak.Speak;
 import com.speak.receiver.Receiver;
+import com.speak.sender.Sender;
 import com.speak.utils.Configuration;
 
 import org.json.JSONArray;
@@ -29,32 +34,45 @@ import java.util.zip.Inflater;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button btn_abort,btn_send,btn_receive;
+    Button btn_send,btn_receive,btn_stop_send,btn_stop_receive;
+    TextView tv_data;
+    EditText edt_data;
     Speak speak;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        btn_abort = findViewById(R.id.btn_abort);
-        btn_send = findViewById(R.id.btn_send);
-        btn_receive = findViewById(R.id.btn_receive);
+        init();
+        initView();
+    }
+
+    void init(){
         speak = new Speak(new Configuration());
+    }
 
-        try {
-            JSONObject obj = new JSONObject(loadJSONFromAsset());
-            JSONArray jsonArray = obj.getJSONArray("data");
-            speak.setJsonArray(jsonArray);
-            Log.d("test","");
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+    void initView(){
+        edt_data = findViewById(R.id.edt_query);
+        tv_data = findViewById(R.id.tv_data);
+        btn_send = findViewById(R.id.btn_send);
+        btn_stop_send = findViewById(R.id.btn_stop_send);
+        btn_receive = findViewById(R.id.btn_receive);
+        btn_stop_receive = findViewById(R.id.btn_stop_receive);
 
+        setButtonListeners();
+    }
 
-        btn_abort.setOnClickListener(new View.OnClickListener() {
+    void setButtonListeners(){
+
+        btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                speak.stopListening();
+                speak.startSending(edt_data.getText().toString(), new Sender.SenderCallBack() {
+                    @Override
+                    public void onSendComplete() {
+                        Toast.makeText(MainActivity.this, "Send Completed", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
 
@@ -65,12 +83,20 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        btn_send.setOnClickListener(new View.OnClickListener() {
+        btn_stop_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                speak.startSending("Sujin");
+                speak.stopSending();
             }
         });
+
+        btn_stop_receive.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+               speak.stopListening();
+            }
+        });
+
     }
 
     public void receive() {
@@ -81,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
             speak.startListening(new Receiver.ReceiverCallBack() {
                 @Override
                 public void onDataReceived(String message) {
-                    Log.d("DATA RECEIVED", message);
+                    tv_data.setText(message);
                 }
             });
         }
@@ -100,58 +126,5 @@ public class MainActivity extends AppCompatActivity {
                 break;
             }
         }
-    }
-
-    public void compress(String inputString) {
-        try {
-            // Encode a String into bytes
-            Log.d("Input", inputString);
-            byte[] input = inputString.getBytes("UTF-8");
-            Log.d("Data", new String(input) + "  " + input.length);
-
-            // Compress the bytes
-            byte[] output = new byte[100];
-            Deflater compresser = new Deflater();
-            compresser.setInput(input);
-            compresser.finish();
-            int compressedDataLength = compresser.deflate(output);
-            Log.d("TAG", "Compressed Data");
-            Log.d("Data", new String(output) + "   " + compressedDataLength);
-            compresser.end();
-
-            // Decompress the bytes
-            Inflater decompresser = new Inflater();
-            decompresser.setInput(output, 0, compressedDataLength);
-            byte[] result = new byte[100];
-            int resultLength = decompresser.inflate(result);
-            decompresser.end();
-            Log.d("Result", new String(result) + "  " + resultLength);
-            Log.d("Result", new String(result).charAt(resultLength - 1) + "");
-
-
-            // Decode the bytes into a String
-            String outputString = new String(result, 0, resultLength, "UTF-8");
-        } catch (java.io.UnsupportedEncodingException ex) {
-            // handle
-        } catch (java.util.zip.DataFormatException ex) {
-            // handle
-        }
-
-    }
-
-    public String loadJSONFromAsset() {
-        String json = null;
-        try {
-            InputStream is = getApplicationContext().getAssets().open("test2.json");
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-            json = new String(buffer, "UTF-8");
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return null;
-        }
-        return json;
     }
 }

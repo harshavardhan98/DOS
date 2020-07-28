@@ -10,21 +10,20 @@ public class ReceiverUtils {
     public static final String BLOCKS_KEY = "block_data";
     public static final String PREFIX_KEY = "prefix_data";
 
+    // Low pass filter with cutoff frequency 10 khz
     final Double[] lpfCoefficients = new Double[]{
                                                     -0.0005,-0.0018,-0.0044,-0.0078,-0.0108,-0.0105,-0.0036,0.0129,0.0397,0.0744,
                                                      0.1110,0.1419,0.1596,0.1596,0.1419,0.1110,0.0744,0.0397,0.0129,-0.0036,
                                                     -0.0105,-0.0108,-0.0078,-0.0044,-0.0018,-0.0005 };
 
+    // High pass filter with cutoff frequency 10 khz
     final Double[] hpfCoefficients = new Double[] {
                                                     0.0010,-0.0009,-0.0021,0.0065,-0.0051,-0.0074,0.0238,-0.0219,-0.0153,0.0715,
                                                     -0.0882, -0.0213, 0.5598 ,0.5598,-0.0213,-0.0882,0.0715,-0.0153,-0.0219,0.0238,
                                                     -0.0074,-0.0051,0.0065,-0.0021,-0.0009,0.0010
                                                   };
 
-
     Configuration configuration;
-
-
 
     public ReceiverUtils(Configuration configuration) {
         this.configuration = configuration;
@@ -54,7 +53,6 @@ public class ReceiverUtils {
 
         return processedData;
     }
-
 
     public Double[] lowPassFilter(Double[] sineProcessedData, Double[] filterCoefficients,Double[] lpfPrefix){
 
@@ -141,42 +139,19 @@ public class ReceiverUtils {
         return result;
     }
 
-    /*
-    *
-        n= offset1 + 127 + offset2;
-        corr = zeros(1,n);
-        for i = 1:(n-127)
-            for j = 1:127
-                corr(i) = corr(i)+code(j)*data(i+j-1);
-            end
-        end
-    * */
-
-    public int correlation(Double[] inputData,String pseudoRandomSequence){
-
-        final Double threshold = 0.8;
-        Double[] corr = new Double[inputData.length];
-        Arrays.fill(corr,0);
-        int startIndex = -1;
-        Double maxData = Double.MIN_VALUE;
-
-        for(int i=0;i<inputData.length-127;i++){
-            for(int j=0;j<127;j++){
-                corr[i] = corr[i]  + (Integer)(pseudoRandomSequence.charAt(j)-'0')*inputData[i+j-1];
-            }
-
-            if(corr[i]>=threshold){
-                startIndex = i;
-                break;
-            }
+    public int getSubArraySum(int startIndex, int endIndex, Integer[] array){
+        int sum = 0;
+        for(int i = startIndex; i<=endIndex; i++){
+            sum+=array[i];
         }
-        return startIndex;
+        return sum;
     }
 
-    private Double[] combineArrays(Double[] prefix, Double[] suffix){
-        ArrayList<Double> combinedArrayList = new ArrayList(Arrays.asList(prefix));
+    public Integer[] combineArrays(Integer[] prefix, Integer[] suffix){
+        ArrayList<Integer> combinedArrayList = new ArrayList(Arrays.asList(prefix));
         combinedArrayList.addAll(Arrays.asList(suffix));
-        Double[] combinedArray = combinedArrayList.toArray(new Double[0]);
+        Integer[] combinedArray = combinedArrayList.toArray(new Integer[0]);
         return combinedArray;
     }
+
 }

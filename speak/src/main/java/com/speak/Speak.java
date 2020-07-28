@@ -19,13 +19,6 @@ public class Speak {
         receiver = new Receiver();
     }
 
-    public void setJsonArray(JSONArray jsonArray) {
-        data = new short[jsonArray.length()];
-        for(int i=0;i<jsonArray.length();i++){
-            data[i]= (short)jsonArray.optInt(i);
-        }
-    }
-
     public void startSending(String payLoad, Sender.SenderCallBack senderCallBack) {
         sender.sendData(payLoad, configuration, senderCallBack);
     }

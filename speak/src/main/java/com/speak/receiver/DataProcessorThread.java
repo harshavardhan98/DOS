@@ -1,22 +1,13 @@
 package com.speak.receiver;
 
 import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import com.speak.utils.Configuration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
-
-/*
-  1. Filter define
-  2. RSSI
-  3. SineRemoval
-  4. Low Pass filter & amplify
-* */
-
-
-//1 1 1 1 1 1 1 1 1 1 1 1 . 1 1 1 1 1 1 1 1 . 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
 
 
 public class DataProcessorThread extends Thread{
@@ -29,8 +20,8 @@ public class DataProcessorThread extends Thread{
     int dataStartIndex;
     ArrayList<String> prbsSequence;
     ArrayList<Integer> blocks;
-    String finalBinaryData;
-    String finalData;
+    String receivedBinaryData;
+    String receivedData;
     Integer prbsSequenceIndex;
     Integer peakPolarity;
     ArrayList<Short> exptData = new ArrayList<>();
@@ -53,14 +44,13 @@ public class DataProcessorThread extends Thread{
         dataStartIndex = -1;
         this.prbsSequence = prbsSequence;
         prbsSequenceIndex = 0;
-        finalBinaryData = "";
-        finalData ="";
+        receivedBinaryData = "";
+        receivedData ="";
     }
-
-    // p(i) = sum(data(i:(i+bit_delay-1)))-sum(data((i+bit_delay):(i-1+2*bit_delay)));
 
     @Override
     public void run() {
+
         Double[] prefix = new Double[configuration.getSamplesPerCodeBit()];
         Double[] lpfPrefix = new Double[configuration.getSamplesPerCodeBit()];
         Double[] hpfPrefix = new Double[configuration.getSamplesPerCodeBit()];
@@ -70,29 +60,25 @@ public class DataProcessorThread extends Thread{
         Arrays.fill(lpfPrefix,0.0);
         Arrays.fill(hpfPrefix,0.0);
         Arrays.fill(processedDataPrefix,-1);
+
         while(!this.isInterrupted()){
             try {
                 Log.d("state","State: "+processState.toString());
                 short[] buff = (short[]) arrayBlockingQueue.take();
-                short[] buff2 = Arrays.copyOf(buff,buff.length);
-                // TODO Process data here
                 Integer[] processedData = receiverUtils.removeSine(buff, prefix,hpfPrefix,lpfPrefix);
 
-
                 if(processState==ProcessState.carrierSync){
-                    processedData = combineArrays(processedDataPrefix, processedData);
+                    processedData = receiverUtils.combineArrays(processedDataPrefix, processedData);
                     for(int i=0; i<processedData.length - 5 * configuration.getSamplesPerCodeBit(); i++){
                         if(checkIfPreamble(i,processedData)) {
-                            for(int m=0;m<buff2.length;m++){
-                                exptData.add(buff2[m]);
-                            }
+//                            updateExptData(buff);
                             HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
                                                                                                 dataStartIndex,
                                                                                                 blockPrefix);
                             blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
                             if(checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY))){
                                 if(retrieveData(new Integer[]{})){
-                                    abort();
+                                    sendMessageAndAbort();
                                 }
                             }
                             break;
@@ -103,42 +89,27 @@ public class DataProcessorThread extends Thread{
                     }
                 }
                 else if(processState == ProcessState.CodeSync){
-                    for(int m=0;m<buff2.length;m++){
-                        exptData.add(buff2[m]);
-                    }
 
-                    if(exptData.size()>9*configuration.getSamplingRate()/2){
-                        Log.d("tag","");
-                        Log.d("tag","");
-                    }
+//                    updateExptData(buff);
                     HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
                                                   0,
                                                             blockPrefix);
-
                     blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
                     if(checkPRBS(data.get(ReceiverUtils.BLOCKS_KEY))){
                         if(retrieveData(new Integer[]{})){
-                            abort();
+                            sendMessageAndAbort();
                         }
                     }
                 }else if(processState == ProcessState.DataRecovery){
 
-                    for(int m=0;m<buff2.length;m++){
-                        exptData.add(buff2[m]);
-                    }
-
-                    if(exptData.size()>9*configuration.getSamplingRate()/2){
-                        Log.d("tag","");
-                        Log.d("tag","");
-                    }
-
+//                    updateExptData(buff);
                     HashMap<String,Integer[]> data = receiverUtils.reduceBlockDataToBits(processedData,
                                                         0,
                                                         blockPrefix);
 
                     blockPrefix = data.get(ReceiverUtils.PREFIX_KEY);
                     if(retrieveData(data.get(ReceiverUtils.BLOCKS_KEY))){
-                            abort();
+                            sendMessageAndAbort();
                     }
 
                 }
@@ -150,27 +121,46 @@ public class DataProcessorThread extends Thread{
         }
     }
 
+    private void updateExptData(short[] buff){
+
+        for(int m=0;m<buff.length;m++){
+            exptData.add(buff[m]);
+        }
+
+        if(exptData.size()>9*configuration.getSamplingRate()/2){
+            Log.d("tag","");
+            Log.d("tag","");
+        }
+    }
+
+    private void sendMessageAndAbort(){
+        Message msg = new Message();
+        msg.obj = receivedData;
+        handler.sendMessage(msg);
+        abort();
+    }
+
     public void abort(){
         this.interrupt();
     }
 
     private boolean checkIfPreamble(int startIndex, Integer[] processedData){
         int power1, power2;
-        power1 = getSubArraySum(startIndex,startIndex+configuration.getSamplesPerCodeBit()-1, processedData)
-                - getSubArraySum(startIndex+configuration.getSamplesPerCodeBit(), startIndex+ 2*configuration.getSamplesPerCodeBit()-1, processedData);
+        power1 = receiverUtils.getSubArraySum(startIndex,startIndex+configuration.getSamplesPerCodeBit()-1, processedData)
+                - receiverUtils.getSubArraySum(startIndex+configuration.getSamplesPerCodeBit(), startIndex+ 2*configuration.getSamplesPerCodeBit()-1, processedData);
         if (power1>=200){
             int maxIndex= startIndex,maxPower=power1;
             for(int i=1;i<=configuration.getSamplesPerCodeBit();i++){
-                power1 = getSubArraySum(startIndex+i,startIndex+i+configuration.getSamplesPerCodeBit()-1, processedData)
-                        - getSubArraySum(startIndex+i+configuration.getSamplesPerCodeBit(), startIndex+i+ 2*configuration.getSamplesPerCodeBit()-1, processedData);
+                power1 = receiverUtils.getSubArraySum(startIndex+i,startIndex+i+configuration.getSamplesPerCodeBit()-1, processedData)
+                        - receiverUtils.getSubArraySum(startIndex+i+configuration.getSamplesPerCodeBit(), startIndex+i+ 2*configuration.getSamplesPerCodeBit()-1, processedData);
                 if(power1>maxPower){
                     maxPower=power1;
                     maxIndex = i;
                 }
             }
             startIndex = maxIndex;
-            power2 = getSubArraySum(startIndex + 2*configuration.getSamplesPerCodeBit(),startIndex+3*configuration.getSamplesPerCodeBit()-1, processedData)
-                    - getSubArraySum(startIndex+3*configuration.getSamplesPerCodeBit(), startIndex+ 4*configuration.getSamplesPerCodeBit()-1, processedData);
+            power2 = receiverUtils.getSubArraySum(startIndex + 2*configuration.getSamplesPerCodeBit(),startIndex+3*configuration.getSamplesPerCodeBit()-1, processedData)
+                    - receiverUtils.getSubArraySum(startIndex+3*configuration.getSamplesPerCodeBit(), startIndex+ 4*configuration.getSamplesPerCodeBit()-1, processedData);
             if(Math.abs(maxPower-power2) <20){
                 dataStartIndex = startIndex;
                 processState = ProcessState.CodeSync;
@@ -180,29 +170,16 @@ public class DataProcessorThread extends Thread{
         return false;
     }
 
-    private int getSubArraySum(int startIndex, int endIndex, Integer[] array){
-        int sum = 0;
-        for(int i = startIndex; i<=endIndex; i++){
-            sum+=array[i];
-        }
-        return sum;
-    }
-
-    private Integer[] combineArrays(Integer[] prefix, Integer[] suffix){
-        ArrayList<Integer> combinedArrayList = new ArrayList(Arrays.asList(prefix));
-        combinedArrayList.addAll(Arrays.asList(suffix));
-        Integer[] combinedArray = combinedArrayList.toArray(new Integer[0]);
-        return combinedArray;
-    }
-
     private boolean checkPRBS(Integer[] data){
         int index = blocks.size();
         blocks.addAll(Arrays.asList(data));
 
+        // Set the current bits based on previous bits
         for(int i=index;i<blocks.size();i++){
             blocks.set(i,blocks.get(i-1)*blocks.get(i));
         }
 
+        // Check for prbs code synchronisation
         while(blocks.size()>=prbsSequence.size()){
             int sum=0;
             for(int i=0;i<prbsSequence.size();i++){
@@ -223,8 +200,7 @@ public class DataProcessorThread extends Thread{
         return false;
     }
 
-
-    public boolean retrieveData(Integer[] data){
+    private boolean retrieveData(Integer[] data){
 
         int index = blocks.size();
         blocks.addAll(Arrays.asList(data));
@@ -242,22 +218,25 @@ public class DataProcessorThread extends Thread{
                 sum+=val;
             }
 
-            finalBinaryData +=(sum/(double)configuration.getSpreadingFactor() > 0)?"1":"0";
-            if(checkFinalData()) return true;
+            receivedBinaryData +=(sum/(double)configuration.getSpreadingFactor() > 0)?"1":"0";
+            if(convertBinaryToAscii()) return true;
         }
 
         return false;
     }
 
-    public boolean checkFinalData(){
-        if(finalBinaryData.length()==8){
-            int charCode = Integer.parseInt(finalBinaryData, 2);
+    private boolean convertBinaryToAscii(){
+        if(receivedBinaryData.length()==8){
+            int charCode = Integer.parseInt(receivedBinaryData, 2);
             String str = new Character((char)charCode).toString();
-            finalData +=str;
-            if(str.equals("$")) return true;
-            Log.d("bdata",finalBinaryData);
-            Log.d("data",finalData);
-            finalBinaryData = "";
+            // check for terminal character
+            if(str.equals(configuration.getTerminalChar())) {
+                return true;
+            }
+            receivedData +=str;
+            Log.d("bdata", receivedBinaryData);
+            Log.d("data", receivedData);
+            receivedBinaryData = "";
         }
         return false;
     }

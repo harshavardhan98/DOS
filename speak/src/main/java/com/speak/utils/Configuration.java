@@ -4,7 +4,6 @@ public class Configuration {
 
     private String seedValue;
     private Integer samplingRate;
-    // TODO check with codec for android devices
     private Double bitDuration;
     private Integer spreadingFactor;
     private Double codeBitDuration;

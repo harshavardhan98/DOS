@@ -21,8 +21,8 @@ public class Sender {
         BitManipulationHelper bitManipulationHelper = new BitManipulationHelper(configuration);
         ArrayList<String> inputBits = bitManipulationHelper.convertAsciiToBinary(input);
         ArrayList<String> pseudoRandomSequence = bitManipulationHelper.generatePseudoRandomSequence();
-        ArrayList<Byte> interpolatedDataBits = bitManipulationHelper.interpolateDataBits(inputBits);
-        ArrayList<Byte> interpolatedCodeBits = bitManipulationHelper.interpolateCodeBits(pseudoRandomSequence);
+        ArrayList<Byte> interpolatedDataBits = bitManipulationHelper.interpolateBits(inputBits,configuration.getSamplesPerDataBit());
+        ArrayList<Byte> interpolatedCodeBits = bitManipulationHelper.interpolateBits(pseudoRandomSequence,configuration.getSamplesPerCodeBit());
         return bitManipulationHelper.encodeBits(interpolatedCodeBits, interpolatedDataBits,pseudoRandomSequence);
     }
 
